@@ -24,7 +24,7 @@ DVP_OVERLAY_ENTRY = struct.Struct("<III")
 def c_string(table: bytes, offset: int) -> str:
     if offset >= len(table):
         return f"<invalid-string-offset:{offset:#x}>"
-    end = table.find(b"\\0", offset)
+    end = table.find(b"\0", offset)
     if end < 0:
         end = len(table)
     return table[offset:end].decode("ascii", errors="replace")
@@ -37,7 +37,7 @@ def inspect(path: Path) -> dict:
 
     fields = ELF_HEADER.unpack_from(data)
     ident = fields[0]
-    if ident[:4] != b"\\x7fELF":
+    if ident[:4] != b"\x7fELF":
         raise ValueError("Input is not an ELF file")
     if ident[4] != 1 or ident[5] != 1:
         raise ValueError("Expected ELF32 little-endian input")
@@ -166,7 +166,7 @@ def main() -> None:
     report = inspect(args.elf)
     rendered = json.dumps(report, indent=2)
     if args.output:
-        args.output.write_text(rendered + "\\n", encoding="utf-8")
+        args.output.write_text(rendered + "\n", encoding="utf-8")
     else:
         print(rendered)
 
