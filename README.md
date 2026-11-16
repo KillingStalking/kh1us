@@ -41,3 +41,23 @@ This repository targets the game's main executable, an elf file named uniquely b
  > Additional asset extraction is currently only supported by the JP version of the game.
 
 Additional assets that are not used in this project may optionally be extracted by running `./tools/iso/extract.py` on the game's ISO. The extracted files are in the `kingdom` directory.
+
+---
+
+### USA ELF inspection (experimental)
+
+The original USA release is not yet a supported decompilation target. The
+repository currently contains linker configurations for the Japanese original
+and Final Mix only. Do not reuse either configuration for the USA executable:
+the main image layout, GP value, BSS size, and overlay metadata must be
+validated against the USA ELF first.
+
+A read-only ELF inspection helper is available:
+
+```sh
+python tools/elf/inspect.py SLUS_203.70 --output usa-elf-report.json
+```
+
+It reports ELF headers, program headers, section ranges, the GP value from
+`.reginfo`, SHA-1/CRC32, and Sony DVP overlay table entries. It does not
+extract game assets or make the project buildable for USA by itself.
