@@ -120,3 +120,25 @@ same delta: `pppAngleCalc` is 22/144 bytes equal, `pppAngleCon` is 5/32,
 the `0x2760` mapping beyond the six-function cluster without a fresh match.
 This is a useful example of a locally reliable function cluster inside a
 larger region where the mapping changes or code diverges.
+
+## Second named-function cluster: worldfile
+
+The JP symbols `worldfile_getAbbr`, `worldfile_getNameNoSet`,
+`worldfile_getNames`, and `worldfile_getBinImgName` form another contiguous
+cluster. The main-image mapper finds delta `0xC0` (JP offset minus USA offset)
+with seven unique anchors in the enclosing JP subsegment. Applying that delta
+to the four JP symbol extents gives:
+
+| JP function | JP offset | Candidate USA offset | Compared bytes equal |
+|---|---:|---:|---:|
+| `worldfile_getAbbr` | `0x11F40` | `0x11E80` | 35 / 40 (87.5%) |
+| `worldfile_getNameNoSet` | `0x11F68` | `0x11EA8` | 127 / 136 (93.4%) |
+| `worldfile_getNames` | `0x11FF0` | `0x11F30` | 184 / 224 (82.1%) |
+| `worldfile_getBinImgName` | `0x120D0` | `0x12010` | 133 / 152 (87.5%) |
+
+This is a second useful local correspondence, but the function-level
+`map_symbols.py` helper may return weak or unmatched for some short functions:
+there are too few unique 16-byte blocks inside those individual extents. The
+larger subsegment provides the stronger shared-delta evidence. Do not treat
+the result as proof that every call target or relocation in the cluster is
+identical.
