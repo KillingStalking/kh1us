@@ -135,3 +135,20 @@ signatures and verifies direct branch, jump, and call targets against three
 piecewise JP-to-USA address ranges. It rejects ELF inputs whose SHA-1 values
 do not match the audited JP and USA executables. The output is evidence for
 these specific clusters only; it is not a complete USA symbol map.
+
+
+## Audit absolute data references
+
+```sh
+python tools/elf/audit_static_refs.py \
+  SLPS_251.05 SLUS_203.70 config/kh.jp.yaml \
+  -o usa-static-reference-audit.json
+```
+
+This scans only JP Splat `c`, `asm`, and `hasm` main subsegments for
+`LUI` + `ADDIU/ORI` address construction followed by a memory operation.
+A candidate is mapped into USA only when two non-overlapping unique 16-byte
+anchors agree and the MIPS opcode/register signatures match. The report
+classifies reconstructed targets as code, main data, BSS, or outside those
+regions. It is a conservative pattern-based pointer audit, not a full
+data-flow or relocation analysis; see [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).
