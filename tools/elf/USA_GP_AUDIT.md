@@ -119,3 +119,19 @@ The tool pins both input SHA-1 values and refuses other executables. With
 `--jp-yaml`, it also classifies every paired JP location by its Splat
 subsegment type. The JSON includes the candidate addresses, opcode-shaped
 word fields, computed values, and exact-anchor run size.
+
+
+## Follow-up: absolute address materialization
+
+The direct `$gp` scan does not mean the executable lacks static global-data
+references. A separate instruction-pattern pass found 1,202 JP code
+sequences that materialize an address with `LUI` + `ADDIU/ORI` and then use
+the register as a memory base. Of these, 925 were mapped into USA using two
+non-overlapping unique byte anchors and matching instruction/register
+signatures. The mapped set contains 465 main-data targets and 301 BSS targets
+that remain in the corresponding region in USA. Their address deltas vary
+across pages, confirming that neither main data nor BSS can be translated by
+one global offset. See [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).
+
+These are still static candidates; they do not constitute a complete pointer
+map or prove the identity of each global object.
