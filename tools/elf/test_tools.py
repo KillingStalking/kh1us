@@ -26,6 +26,7 @@ compare_main_tool = load_tool("compare_main.py", "kh1_compare_main")
 extract_tool = load_tool("extract_overlays.py", "kh1_extract_overlays")
 vu_tool = load_tool("vu_disasm.py", "kh1_vu_disasm")
 map_tool = load_tool("map_main_subsegments.py", "kh1_map_main_subsegments")
+map_symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
 symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
 
 
@@ -256,6 +257,49 @@ data_value = 0x00100020; // type:s32
             )
             self.assertEqual(result["mapped_candidate_count"], 2)
             self.assertEqual(result["mapping_order_anomaly_count"], 1)
+
+    def test_main_mapper_indexes_non_16_byte_aligned_subsegment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            jp = root / "jp.elf"
+            usa = root / "usa.elf"
+            payload = bytes(range(32))
+            make_elf(jp, payload)
+            make_elf(usa, payload)
+            yaml_path = root / "jp.yaml"
+            yaml_path.write_text(
+                "segments:\\n- name: main\\n  subsegments:\\n"
+                "  - [ 0x4, asm, unaligned_to_16 ]\\n",
+                encoding="utf-8",
+            )
+            result = map_tool.map_subsegments(
+                jp, usa, yaml_path, block_size=16, step=16,
+                search_window=16, min_anchors=1,
+            )
+            item = result["subsegments"][0]
+            self.assertEqual(item["status"], "candidate")
+            self.assertEqual(item["candidates"][0]["usa_start_candidate"], 4)
+
+    def test_symbol_mapper_indexes_non_16_byte_aligned_function(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            jp = root / "jp.elf"
+            usa = root / "usa.elf"
+            payload = bytes(range(32))
+            make_elf(jp, payload)
+            make_elf(usa, payload)
+            symbols = root / "symbols.txt"
+            symbols.write_text(
+                "unaligned_func = 0x100004; // type:func\\n",
+                encoding="utf-8",
+            )
+            result = map_symbol_tool.map_symbols(
+                jp, usa, symbols, block_size=16, step=16,
+                max_function_size=16, min_anchors=1,
+            )
+            item = result["symbols"][0]
+            self.assertEqual(item["status"], "candidate")
+            self.assertEqual(item["candidates"][0]["usa_offset_candidate"], 4)
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
