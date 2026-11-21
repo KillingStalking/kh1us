@@ -77,8 +77,8 @@ The remaining work is to:
 
 ```sh
 python tools/elf/audit_gp_refs.py \
-  SLPS_251.05 SLUS_203.70 \
-  -o usa-gp-reference-audit.json
+  SLPS_251.05 SLUS_203.70 --jp-yaml config/kh.jp.yaml \
+  -o usa-gp-opcode-audit.json
 ```
 
 The tool pins both input SHA-1 values and refuses other executables. With
