@@ -68,6 +68,8 @@ Read-only audit tools and current findings:
   overlay matches, and current limitations.
 - [USA main-image mapping report](tools/elf/USA_MAIN_MAP.md) — first full
   626-boundary JP-to-USA candidate analysis and ordering diagnostics.
+- [iOS port architecture audit](docs/IOS_PORT_AUDIT.md) — confirmed PS2-specific
+  build, graphics, VU, kernel, storage, and input dependencies.
 
 The USA build is not enabled yet. These tools provide analysis and extraction,
 not a complete USA decompilation configuration or a runnable iOS port.
