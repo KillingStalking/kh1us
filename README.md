@@ -67,6 +67,7 @@ Read-only audit tools and current findings:
 - `tools/elf/map_symbols.py` — map known JP function symbols to provisional
   USA addresses using function-bounded byte anchors.
 - [USA GP-relative audit](tools/elf/USA_GP_AUDIT.md) — paired GP-opcode patterns; cross-checking shows all current matches are in Splat data segments.
+- [USA static data-reference audit](tools/elf/USA_STATIC_REF_AUDIT.md) — 925 mapped absolute-address sequences, with piecewise main-data and BSS target deltas.
 - [USA control-flow validation](tools/elf/USA_CONTROL_FLOW.md) — instruction-level checks across mapped PPP, worldfile, and EE library function clusters.
 - [USA ELF audit report](tools/elf/USA_AUDIT.md) — validated metadata,
   overlay matches, and current limitations.
