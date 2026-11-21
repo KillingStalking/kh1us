@@ -66,6 +66,8 @@ Read-only audit tools and current findings:
   conservative USA address candidates using multiple unique byte anchors.
 - [USA ELF audit report](tools/elf/USA_AUDIT.md) — validated metadata,
   overlay matches, and current limitations.
+- [USA main-image mapping report](tools/elf/USA_MAIN_MAP.md) — first full
+  626-boundary JP-to-USA candidate analysis and ordering diagnostics.
 
 The USA build is not enabled yet. These tools provide analysis and extraction,
 not a complete USA decompilation configuration or a runnable iOS port.
