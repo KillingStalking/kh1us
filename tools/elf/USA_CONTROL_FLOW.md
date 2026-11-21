@@ -17,7 +17,7 @@ The validator rejects any input whose SHA-1 differs from these exact files.
 
 ## Aggregate result
 
-<badge color="success">All listed checks matched</badge>
+**Result: all listed checks matched.**
 
 | Check | Result |
 |---|---:|
