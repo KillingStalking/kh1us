@@ -112,11 +112,11 @@ python tools/elf/audit_gp_refs.py \
 ```
 
 The GP audit pins the retail ELF hashes, scans `ADDIU` and load/store
-encodings using `$gp`, and pairs references only inside long runs of unique,
-byte-identical anchors. Its report distinguishes raw opcode candidates from
-paired references and highlights the 32-byte difference between the USA GP
-and BSS start. These are candidates until the matched ranges are classified
-against Splat code/data boundaries; the tool does not generate linker symbols.
+encodings using `$gp`, and pairs patterns only inside long runs of unique,
+byte-identical anchors. Pass `--jp-yaml` to classify each JP offset by Splat
+subsegment. The current 373 paired patterns all fall in `data` subsegments;
+none is confirmed as executable GP-relative code. The tool does not generate
+linker symbols.
 
 See [USA_GP_AUDIT.md](USA_GP_AUDIT.md) for the current results.
 
