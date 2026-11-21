@@ -64,13 +64,16 @@ python tools/elf/map_main_subsegments.py \\
 ```
 
 The mapper reads the declared `main` subsegments from the JP Splat YAML and
-looks for unique 16-byte anchors near each JP subsegment start in both main
-images. It reports USA start candidates only when the anchors agree on an
+looks for unique 16-byte anchors in the first `0x1000` bytes of each JP
+subsegment (clipped to that subsegment's end) in both main images. It reports USA start candidates only when the anchors agree on an
 address delta. The JSON includes the segment type/name, candidate deltas,
 anchor locations, and a status for each subsegment.
 
 This is deliberately conservative: a matching interior anchor does not prove
 the JP and USA segment starts are equivalent. One-anchor matches are marked
 weak by default; ties are ambiguous; no candidate is copied into a USA YAML.
-Validate code/data classification, MIPS function boundaries, relocations, GP
-references, and branch targets before treating any result as a split boundary.
+The JSON also reports ordering anomalies where consecutive candidate JP
+boundaries map to non-increasing USA addresses. Validate code/data
+classification, MIPS function boundaries, relocations, GP references, and
+branch targets before treating any result as a split boundary. The first
+full-run candidate counts are recorded in `USA_MAIN_MAP.md`.
