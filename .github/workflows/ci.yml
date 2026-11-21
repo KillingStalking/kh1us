@@ -37,6 +37,9 @@ jobs:
       - name: Install Python dependencies
         run: python3 -m pip install -U -r requirements.txt --break-system-packages
 
+      - name: Test ELF audit helpers
+        run: python3 -m unittest discover -s tools/elf -p 'test_*.py'
+
       - name: Configure ${{ matrix.version }}
         run: ./configure.py -v "${{ matrix.version }}"
 
