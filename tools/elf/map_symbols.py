@@ -173,6 +173,31 @@ def map_symbols(
             "candidates": candidates,
         })
 
+    mapped_candidates = []
+    for item in output:
+        if item["status"] not in ("candidate", "candidate_strong"):
+            continue
+        if not item["candidates"]:
+            continue
+        candidate = item["candidates"][0]
+        usa_offset = candidate["usa_offset_candidate"]
+        if 0 <= usa_offset < len(usa_main):
+            mapped_candidates.append({
+                "name": item["name"],
+                "jp_offset": item["jp_offset"],
+                "usa_offset": usa_offset,
+                "delta": candidate["delta"],
+                "anchor_count": candidate["anchor_count"],
+            })
+
+    ordering_anomalies = []
+    for previous, current in zip(mapped_candidates, mapped_candidates[1:]):
+        if current["usa_offset"] <= previous["usa_offset"]:
+            ordering_anomalies.append({
+                "previous": previous,
+                "current": current,
+            })
+
     return {
         "jp_elf": jp_elf.name,
         "usa_elf": usa_elf.name,
@@ -185,6 +210,9 @@ def map_symbols(
         "min_anchors": min_anchors,
         "function_symbol_count": len(symbols),
         "status_counts": dict(Counter(item["status"] for item in output)),
+        "mapped_candidate_count": len(mapped_candidates),
+        "mapping_order_anomaly_count": len(ordering_anomalies),
+        "mapping_order_anomalies": ordering_anomalies,
         "symbols": output,
         "warning": (
             "Candidates only. The next symbol address is used as a provisional "
