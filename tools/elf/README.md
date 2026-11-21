@@ -8,22 +8,39 @@ These scripts inspect PS2 ELF32/MIPS executables without modifying the inputs.
 python tools/elf/inspect.py SLUS_203.70 -o usa-elf.json
 ```
 
-## Compare Japanese and USA DVP overlay payloads
+## Extract overlay payloads
+
+```sh
+python tools/elf/extract_overlays.py SLUS_203.70 -o extracted/usa
+```
+
+The extractor uses each overlay's EE address from `.DVP.ovlytab` and the
+corresponding `.DVP.overlay.*` section size, then reads the payload from the
+`main` load image. It writes one binary per overlay plus `manifest.json`.
+
+## Disassemble VU instruction pairs
+
+```sh
+python tools/elf/vu_disasm.py extracted/usa/overlay_00_ee_XXXXXXXX_vu_XXXX.bin --base 0x0 --to-ebit
+```
+
+Replace the filename and `--base` with the EE/VU values in the extraction
+manifest. VU instructions are 8-byte pairs (lower word followed by upper
+word). The current decoder prints operation names, common register fields,
+branch destinations, E/M/D/T/I flags, and raw words. It is a structural
+inspection aid, not a cycle-accurate interpreter or complete semantic decoder.
+
+## Compare Japanese and USA overlay payloads
 
 ```sh
 python tools/elf/compare_overlays.py SLPS_251.05 SLUS_203.70 -o overlay-compare.json
 ```
 
-For each DVP overlay table entry, the comparator:
-- resolves the corresponding `.DVP.overlay.*` marker section;
-- uses that section's size as the overlay payload length;
-- reads the payload from the `main` load image at the entry's EE address;
-- validates that the range is in bounds and aligned to 8-byte VU instruction pairs;
-- reports exact hashes and long matching byte ranges.
+The comparator reports payload hashes, exact matches, long matching byte
+ranges, EE/VU addresses, and the fill-byte markers. In these ELF files, the
+`.DVP.overlay.*` section bytes themselves are linker fill markers, not the
+payload. The EE-addressed range in the main load image is the candidate payload
+location.
 
-The `.DVP.overlay.*` section bytes themselves are linker fill markers, not
-the payload. The EE-addressed range in the main load image is the candidate
-payload location. The report is a binary comparison aid: matching bytes do
-not automatically establish function boundaries or a complete JP-to-USA
-address map. The script validates bounds and alignment, but does not yet
-disassemble VU instructions.
+Matching bytes are binary correspondences, not automatically verified
+function boundaries or a complete JP-to-USA address map.
