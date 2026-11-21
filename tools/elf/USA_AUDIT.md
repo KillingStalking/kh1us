@@ -187,3 +187,9 @@ then candidate boundaries must be checked against MIPS instruction boundaries,
 relocations, function control flow, and data/rodata references. The mapper's
 unit tests have been added to the existing ELF helper test suite; no passing
 CI result is claimed for this commit.
+## Main-image split mapping
+
+The first full JP-to-USA candidate mapping run is documented separately in
+[`USA_MAIN_MAP.md`](USA_MAIN_MAP.md). It processes all 626 JP main-image
+subsegment starts and reports candidate counts plus ordering anomalies. These
+are still address candidates, not verified USA split boundaries.
