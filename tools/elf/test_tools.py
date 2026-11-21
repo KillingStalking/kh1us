@@ -28,6 +28,7 @@ vu_tool = load_tool("vu_disasm.py", "kh1_vu_disasm")
 map_tool = load_tool("map_main_subsegments.py", "kh1_map_main_subsegments")
 symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
 control_flow_tool = load_tool("validate_control_flow.py", "kh1_validate_control_flow")
+gp_tool = load_tool("audit_gp_refs.py", "kh1_audit_gp_refs")
 
 
 def make_elf(path: Path, main_payload: bytes) -> None:
@@ -313,6 +314,24 @@ data_value = 0x00100020; // type:s32
         self.assertEqual(decoded[0]["target"], 0x100010)
         self.assertEqual(decoded[1]["kind"], "jr")
         self.assertIsNone(decoded[1]["target"])
+
+    def test_gp_reference_decoder_uses_gp_base_and_signed_immediate(self):
+        lw = (0x23 << 26) | (28 << 21) | (2 << 16) | 0x0010
+        addiu = (0x09 << 26) | (28 << 21) | (3 << 16) | 0xFFFC
+        ori = (0x0D << 26) | (28 << 21) | (4 << 16) | 0x0020
+        decoded = gp_tool.decode_gp_refs(
+            struct.pack("<III", lw, addiu, ori), 0x0048D3E0
+        )
+        self.assertEqual(len(decoded), 2)
+        self.assertEqual(decoded[0]["ea"], 0x0048D3F0)
+        self.assertEqual(decoded[1]["immediate"], -4)
+        self.assertEqual(decoded[1]["ea"], 0x0048D3DC)
+
+    def test_exact_anchor_runs_preserve_piecewise_offsets(self):
+        payload = bytes(range(64))
+        pairs, runs = gp_tool.exact_anchor_runs(payload, payload[8:] + payload[:8])
+        self.assertTrue(pairs)
+        self.assertTrue(any(run[0] == 0 and run[2] == 56 for run in runs))
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
