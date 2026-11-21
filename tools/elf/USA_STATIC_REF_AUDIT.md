@@ -14,7 +14,7 @@ addresses materialized with `LUI` plus `ADDIU` or `ORI`.
 | SHA-1 | `9dabbf867a7ec2a030df99ba1ed969f2deef0488` | `8704cda65ca5e3f04202f0a50472401355335312` |
 | Main VMA | `0x00100000` | `0x00100000` |
 | GP | `0x0048DB00` | `0x0048D3E0` |
-| BSS | `0x0048DB00–0x0068F000` | `0x0048D400–0x0066CE80` |
+| BSS | `0x0048DB00–0x0066F000` | `0x0048D400–0x0066CE80` |
 
 The JP Splat `main` segment declares one contiguous code span:
 `main+0x000000–main+0x16F2E0`. The scanner uses only subsegments typed
