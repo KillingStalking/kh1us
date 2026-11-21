@@ -128,8 +128,6 @@ def decode_candidate(words: list[int], index: int):
                 for k in range(j + 1, min(j + 7, len(words))):
                     use = words[k]
                     uop, urs = use >> 26, (use >> 21) & 31
-                    if writes_register(use, reg):
-                        break
                     if urs == reg and uop in MEMORY_OPS:
                         return {"i": index * 4, "j": j * 4, "k": k * 4,
                                 "reg": reg, "target": target, "low_op": op,
@@ -137,6 +135,8 @@ def decode_candidate(words: list[int], index: int):
                                 "signature": [first & 0xFFFF0000,
                                               ins & 0xFFFF0000,
                                               use & 0xFFFF0000]}
+                    if writes_register(use, reg):
+                        break
                 return None
             break
     return None
