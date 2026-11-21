@@ -331,7 +331,7 @@ data_value = 0x00100020; // type:s32
         payload = bytes(range(64))
         pairs, runs = gp_tool.exact_anchor_runs(payload, payload[8:] + payload[:8])
         self.assertTrue(pairs)
-        self.assertTrue(any(run[0] == 0 and run[2] == 56 for run in runs))
+        self.assertTrue(any(run[0] == 8 and run[2] == 0 for run in runs))
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
