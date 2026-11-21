@@ -327,6 +327,21 @@ data_value = 0x00100020; // type:s32
         self.assertEqual(decoded[1]["immediate"], -4)
         self.assertEqual(decoded[1]["ea"], 0x0048D3DC)
 
+    def test_gp_audit_parses_jp_splat_code_and_data_boundaries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            yaml_path = Path(directory) / "kh.jp.yaml"
+            yaml_path.write_text(
+                "segments:\\n- name: main\\n  subsegments:\\n"
+                "  - [ 0x0, asm, first ]\\n"
+                "  - [ 0x20, data ]\\n"
+                "- name: overlay_0\\n",
+                encoding="utf-8",
+            )
+            entries = gp_tool.parse_main_subsegments(yaml_path, 0x40)
+            self.assertEqual(len(entries), 2)
+            self.assertEqual(gp_tool.find_subsegment(0x10, entries)["type"], "asm")
+            self.assertEqual(gp_tool.find_subsegment(0x24, entries)["type"], "data")
+
     def test_exact_anchor_runs_preserve_piecewise_offsets(self):
         payload = bytes(range(72))
         pairs, runs = gp_tool.exact_anchor_runs(payload, payload[8:] + payload[:8])
