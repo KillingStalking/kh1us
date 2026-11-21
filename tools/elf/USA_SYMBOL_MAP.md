@@ -1,5 +1,8 @@
 # USA function-symbol candidate mapping report
 
+> **Mapper revision notice (2026-11-22):** The candidate counts below were produced before the global anchor index was corrected from 16-byte-only sampling to every 4-byte-aligned offset. Treat these counts as historical/provisional until the revised symbol mapper is rerun. Manually checked function clusters are documented separately in `USA_MAIN_MAP.md` and `USA_CONTROL_FLOW.md`.
+
+
 This report records a full candidate-mapping pass over the existing JP game
 function symbol table, using the supplied JP and USA ELF inputs.
 
