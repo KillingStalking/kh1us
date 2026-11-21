@@ -70,6 +70,8 @@ Read-only audit tools and current findings:
   overlay matches, and current limitations.
 - [USA main-image mapping report](tools/elf/USA_MAIN_MAP.md) — first full
   626-boundary JP-to-USA candidate analysis and ordering diagnostics.
+- [USA function-symbol mapping report](tools/elf/USA_SYMBOL_MAP.md) — first
+  full pass over 532 JP function symbols.
 - [iOS port architecture audit](docs/IOS_PORT_AUDIT.md) — confirmed PS2-specific
   build, graphics, VU, kernel, storage, and input dependencies.
 
