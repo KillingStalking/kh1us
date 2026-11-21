@@ -1,5 +1,8 @@
 # USA main-image split-map candidate report
 
+> **Mapper revision notice (2026-11-22):** The original candidate counts and tables below were produced by the first implementation, whose global anchor index sampled only 16-byte-aligned offsets. The mapper has since been corrected to index every 4-byte-aligned offset while retaining 16-byte anchor sampling. Treat the counts below as historical/provisional until the revised mapper is rerun on both ELF files. The manual byte/control-flow spot-checks are separate observations and are not invalidated by this indexing correction.
+
+
 This report records a first full run of the conservative JP-to-USA main-image
 subsegment mapper against the two local ELF inputs used for this audit.
 
