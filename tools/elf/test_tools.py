@@ -331,10 +331,10 @@ data_value = 0x00100020; // type:s32
         with tempfile.TemporaryDirectory() as directory:
             yaml_path = Path(directory) / "kh.jp.yaml"
             yaml_path.write_text(
-                "segments:\\n- name: main\\n  subsegments:\\n"
-                "  - [ 0x0, asm, first ]\\n"
-                "  - [ 0x20, data ]\\n"
-                "- name: overlay_0\\n",
+                "segments:\n- name: main\n  subsegments:\n"
+                "  - [ 0x0, asm, first ]\n"
+                "  - [ 0x20, data ]\n"
+                "- name: overlay_0\n",
                 encoding="utf-8",
             )
             entries = gp_tool.parse_main_subsegments(yaml_path, 0x40)
