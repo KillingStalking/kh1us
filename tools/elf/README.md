@@ -104,6 +104,22 @@ MIPS disassembly and control flow. The JSON also reports non-increasing USA-addr
 consecutive candidate symbols. The first full result is recorded in
 `USA_SYMBOL_MAP.md`.
 
+## Audit GP-relative references
+
+```sh
+python tools/elf/audit_gp_refs.py \
+  SLPS_251.05 SLUS_203.70 -o usa-gp-reference-audit.json
+```
+
+The GP audit pins the retail ELF hashes, scans `ADDIU` and load/store
+encodings using `$gp`, and pairs references only inside long runs of unique,
+byte-identical anchors. Its report distinguishes raw opcode candidates from
+paired references and highlights the 32-byte difference between the USA GP
+and BSS start. These are candidates until the matched ranges are classified
+against Splat code/data boundaries; the tool does not generate linker symbols.
+
+See [USA_GP_AUDIT.md](USA_GP_AUDIT.md) for the current results.
+
 ## Validate known JP-USA MIPS control-flow clusters
 
 ```sh
