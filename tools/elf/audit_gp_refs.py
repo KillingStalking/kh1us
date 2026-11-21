@@ -185,17 +185,42 @@ def audit(jp_path: Path, usa_path: Path, jp_yaml: Path | None = None):
             ] += 1
         raw_type_counts = collections.Counter()
         raw_code_offsets = []
+        code_gp_base_refs = []
+        code_gp_lq_sq = []
+        code_gp_r_format = []
         for item in decode_gp_refs(jp["payload"], jp["gp"]):
             segment = find_subsegment(item["offset"], entries)
             kind = segment["type"] if segment else "unmapped"
             raw_type_counts[kind] += 1
             if kind in {"c", "asm", "hasm"}:
                 raw_code_offsets.append(item["offset"])
+        for segment in entries:
+            if segment["type"] not in {"c", "asm", "hasm"}:
+                continue
+            for offset in range(segment["offset"], segment["end"] - 3, 4):
+                word = struct.unpack_from("<I", jp["payload"], offset)[0]
+                opcode = word >> 26
+                rs, rt, rd = (word >> 21) & 31, (word >> 16) & 31, (word >> 11) & 31
+                if opcode == 0 and 28 in (rs, rt, rd):
+                    code_gp_r_format.append({
+                        "offset": offset, "word": f"0x{word:08X}",
+                        "rs": rs, "rt": rt, "rd": rd, "funct": word & 0x3F,
+                    })
+                if opcode in (0x1E, 0x1F) and rt == 28:
+                    code_gp_lq_sq.append({
+                        "offset": offset, "word": f"0x{word:08X}",
+                        "operation": "LQ" if opcode == 0x1E else "SQ",
+                        "base_register": rs, "immediate": word & 0xFFFF,
+                    })
+        code_gp_base_refs = raw_code_offsets
         splat_classification = {
             "subsegment_count": len(entries),
             "paired_pattern_type_counts": dict(paired_type_counts),
             "raw_jp_opcode_candidate_type_counts": dict(raw_type_counts),
             "raw_jp_code_subsegment_candidate_count": len(raw_code_offsets),
+            "code_gp_base_references": code_gp_base_refs,
+            "code_gp_lq_sq_register_saves": code_gp_lq_sq,
+            "code_gp_r_format_uses": code_gp_r_format,
             "paired_pattern_segment_counts": dict(segment_counts),
         }
     region_pairs = collections.Counter((x["jp_region"], x["usa_region"]) for x in details)
