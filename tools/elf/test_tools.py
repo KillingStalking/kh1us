@@ -328,7 +328,7 @@ data_value = 0x00100020; // type:s32
         self.assertEqual(decoded[1]["ea"], 0x0048D3DC)
 
     def test_exact_anchor_runs_preserve_piecewise_offsets(self):
-        payload = bytes(range(64))
+        payload = bytes(range(72))
         pairs, runs = gp_tool.exact_anchor_runs(payload, payload[8:] + payload[:8])
         self.assertTrue(pairs)
         self.assertTrue(any(run[0] == 8 and run[2] == 0 for run in runs))
