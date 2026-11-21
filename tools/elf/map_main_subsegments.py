@@ -109,7 +109,7 @@ def map_subsegments(
     jp_yaml: Path,
     block_size: int = 16,
     step: int = 16,
-    search_window: int = 0x200,
+    search_window: int = 0x1000,
     min_anchors: int = 2,
 ):
     if block_size < 8 or block_size % 4:
@@ -190,6 +190,30 @@ def map_subsegments(
             "candidates": candidates,
         })
 
+    mapped_candidates = []
+    for item in output:
+        if item["status"] not in ("candidate", "candidate_strong"):
+            continue
+        if not item["candidates"]:
+            continue
+        candidate = item["candidates"][0]
+        usa_start = candidate["usa_start_candidate"]
+        if 0 <= usa_start < len(usa_main):
+            mapped_candidates.append({
+                "jp_offset": item["jp_offset"],
+                "usa_offset": usa_start,
+                "delta": candidate["delta"],
+                "anchor_count": candidate["anchor_count"],
+            })
+
+    ordering_anomalies = []
+    for previous, current in zip(mapped_candidates, mapped_candidates[1:]):
+        if current["usa_offset"] <= previous["usa_offset"]:
+            ordering_anomalies.append({
+                "previous": previous,
+                "current": current,
+            })
+
     return {
         "jp_elf": jp_elf.name,
         "usa_elf": usa_elf.name,
@@ -204,6 +228,9 @@ def map_subsegments(
         "usa_main_size": len(usa_main),
         "subsegment_count": len(output),
         "status_counts": dict(Counter(item["status"] for item in output)),
+        "mapped_candidate_count": len(mapped_candidates),
+        "mapping_order_anomaly_count": len(ordering_anomalies),
+        "mapping_order_anomalies": ordering_anomalies,
         "subsegments": output,
         "warning": (
             "Candidates only. Matching interior anchors do not prove that the "
@@ -222,7 +249,7 @@ def main() -> None:
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--block-size", type=int, default=16)
     parser.add_argument("--step", type=int, default=16)
-    parser.add_argument("--search-window", type=lambda x: int(x, 0), default=0x200)
+    parser.add_argument("--search-window", type=lambda x: int(x, 0), default=0x1000)
     parser.add_argument("--min-anchors", type=int, default=2)
     args = parser.parse_args()
 
