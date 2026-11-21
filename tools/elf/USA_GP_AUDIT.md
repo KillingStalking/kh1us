@@ -53,7 +53,20 @@ non-code subsegments:
 | **Total** | **842** |
 
 Thus this scanner found **zero direct `$gp`-based ADDIU/load/store opcode
-candidates inside JP subsegments classified as code**. This does not prove
+candidates inside JP subsegments classified as code**. A separate GPR-field
+inspection of the 458 code subsegments found:
+- one R-format write to register 28 at main offset `0x5C`, which is the
+  startup `move $gp, $a0` initialization;
+- eight R5900 `LQ`/`SQ` operations that save or restore register 28 in
+  stack/context frames;
+- zero other R-format uses of register 28.
+
+The entry stub computes `0x0048DB00` in `$a0` and moves it to `$gp` at
+VMA `0x0010005C`. This confirms the register is initialized, but the
+code-segment scan does not find it used as a memory base. The LQ/SQ hits are
+register preservation, not global-pointer-relative accesses.
+
+ This does not prove
 the executable never accesses globals: it does not detect a GP value copied
 to another register, address formation through other instruction sequences,
 or code outside the JP Splat boundaries. It does show that the apparent
