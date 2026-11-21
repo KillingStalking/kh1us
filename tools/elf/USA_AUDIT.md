@@ -266,3 +266,19 @@ The initial main-subsegment and function-symbol candidate counts are marked
 provisional in their respective reports because the anchor index was corrected
 to include 4-byte-aligned positions. The revised full scans still need to be
 run before any USA split configuration is generated.
+
+
+## GP-relative reference audit
+
+The dedicated [GP audit report](USA_GP_AUDIT.md) records 373 paired GP-based
+ADDIU/load/store instruction candidates inside long byte-identical main-image
+runs. All 373 preserve their immediate and translate their effective address
+by the GP delta of `0x720`. The USA BSS start differs from JP by only
+`0x700`, leaving a 32-byte boundary discrepancy: 44 paired references
+target JP `0x48DB00–0x48DB1F`, corresponding to USA
+`0x48D3E0–0x48D3FF`, immediately before USA BSS.
+
+This is a concrete data-layout lead, not yet a variable-level mapping. The
+main section mixes code and data, so all 373 remain instruction candidates
+until their ranges are classified against Splat boundaries. Unmatched GP
+references and changed immediates also remain to be analyzed.
