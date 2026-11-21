@@ -268,17 +268,16 @@ to include 4-byte-aligned positions. The revised full scans still need to be
 run before any USA split configuration is generated.
 
 
-## GP-relative reference audit
+## GP-opcode candidate audit
 
-The dedicated [GP audit report](USA_GP_AUDIT.md) records 373 paired GP-based
-ADDIU/load/store instruction candidates inside long byte-identical main-image
-runs. All 373 preserve their immediate and translate their effective address
-by the GP delta of `0x720`. The USA BSS start differs from JP by only
-`0x700`, leaving a 32-byte boundary discrepancy: 44 paired references
-target JP `0x48DB00–0x48DB1F`, corresponding to USA
-`0x48D3E0–0x48D3FF`, immediately before USA BSS.
+The [GP opcode audit report](USA_GP_AUDIT.md) records 373 paired opcode-shaped
+patterns inside long byte-identical main-image runs. Cross-checking their JP
+locations against the 626-entry JP Splat main map shows that **all 373 are
+inside subsegments typed `data`** (four large data ranges). They are therefore
+not confirmed executable GP-relative references. The computed `0x720` delta
+and the 32-byte GP/BSS boundary observation are arithmetic properties of
+those data words, not proof of runtime memory accesses.
 
-This is a concrete data-layout lead, not yet a variable-level mapping. The
-main section mixes code and data, so all 373 remain instruction candidates
-until their ranges are classified against Splat boundaries. Unmatched GP
-references and changed immediates also remain to be analyzed.
+The next required pass is to scan only `c`, `asm`, and `hasm` subsegments,
+then validate GP operations using instruction flow and callers. No GP-relative
+code reference has yet been confirmed by this audit.
