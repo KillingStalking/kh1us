@@ -142,3 +142,20 @@ there are too few unique 16-byte blocks inside those individual extents. The
 larger subsegment provides the stronger shared-delta evidence. Do not treat
 the result as proof that every call target or relocation in the cluster is
 identical.
+
+## Standard-library call-target correspondence
+
+The worldfile disassembly also exposes a separate library address range. Calls
+from JP code to `sprintf`, `strcat`, and `strcpy` resolve to USA functions
+at a consistent JP-minus-USA delta of `0x2518`:
+
+| Library function | JP address | USA candidate address | Equal bytes |
+|---|---:|---:|---:|
+| `sprintf` | `0x24D8A0` | `0x24B388` | 140 / 144 (97.2%) |
+| `strcat` | `0x24D930` | `0x24B418` | 298 / 300 (99.3%) |
+| `strcpy` | `0x24DBA0` | `0x24B688` | 276 / 276 (100%) |
+
+The same candidate addresses appear as the corresponding call destinations in
+the manually disassembled worldfile functions. This is a separately shifted
+library range: it must not be confused with the `0xC0` delta for the
+worldfile game-code cluster or the `0x2760` delta for the PPP cluster.
