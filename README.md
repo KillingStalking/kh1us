@@ -56,10 +56,14 @@ Read-only audit tools and current findings:
 
 - `tools/elf/inspect.py` — inspect ELF headers, program headers, sections,
   GP value, hashes, and DVP overlay table metadata.
-- `tools/elf/compare_overlays.py` — compare overlay payloads extracted from
-  EE-addressed ranges in the main load image.
-- [USA ELF audit report](tools/elf/USA_AUDIT.md) — validated ELF metadata,
-  overlay matches, and limitations.
+- `tools/elf/extract_overlays.py` — extract the EE-addressed overlay payloads.
+- `tools/elf/vu_disasm.py` — inspect VU instruction pairs, flags, and branches.
+- `tools/elf/compare_overlays.py` — compare overlay payloads and identify
+  branch-displacement-only differences.
+- `tools/elf/compare_main.py` — find coarse unique byte correspondences in
+  the main image.
+- [USA ELF audit report](tools/elf/USA_AUDIT.md) — validated metadata,
+  overlay matches, and current limitations.
 
-The USA build is not enabled yet. The audit scripts do not extract game assets
-or make the project buildable for USA by themselves.
+The USA build is not enabled yet. These tools provide analysis and extraction,
+not a complete USA decompilation configuration or a runnable iOS port.
