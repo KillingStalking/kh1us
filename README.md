@@ -62,6 +62,8 @@ Read-only audit tools and current findings:
   branch-displacement-only differences.
 - `tools/elf/compare_main.py` — find coarse unique byte correspondences in
   the main image.
+- `tools/elf/map_main_subsegments.py` — map JP Splat main subsegments to
+  conservative USA address candidates using multiple unique byte anchors.
 - [USA ELF audit report](tools/elf/USA_AUDIT.md) — validated metadata,
   overlay matches, and current limitations.
 
