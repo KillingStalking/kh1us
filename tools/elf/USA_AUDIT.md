@@ -271,13 +271,15 @@ run before any USA split configuration is generated.
 ## GP-opcode candidate audit
 
 The [GP opcode audit report](USA_GP_AUDIT.md) records 373 paired opcode-shaped
-patterns inside long byte-identical main-image runs. Cross-checking their JP
-locations against the 626-entry JP Splat main map shows that **all 373 are
-inside subsegments typed `data`** (four large data ranges). They are therefore
-not confirmed executable GP-relative references. The computed `0x720` delta
-and the 32-byte GP/BSS boundary observation are arithmetic properties of
-those data words, not proof of runtime memory accesses.
+patterns inside long byte-identical main-image runs. Cross-checking all 842
+JP raw candidates against the 626-entry JP Splat main map shows that 840 are
+in `data` and 2 are in `rodata`; none is in a `c`, `asm`, or `hasm` subsegment.
+All 373 paired patterns are in `data`. They are therefore not confirmed
+executable GP-relative references. The computed `0x720` delta and the 32-byte
+GP/BSS boundary observation are arithmetic properties of data words, not
+proof of runtime memory accesses.
 
-The next required pass is to scan only `c`, `asm`, and `hasm` subsegments,
-then validate GP operations using instruction flow and callers. No GP-relative
-code reference has yet been confirmed by this audit.
+The next required pass is to search code for GP values copied into other
+registers or constructed through other instruction sequences, then validate
+those references using instruction flow and callers. No direct `$gp`-based
+memory operation has yet been confirmed in JP code by this scan.
