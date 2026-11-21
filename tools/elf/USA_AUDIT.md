@@ -205,3 +205,26 @@ The first full pass over the 532 JP game function symbols is documented in
 [`USA_SYMBOL_MAP.md`](USA_SYMBOL_MAP.md). It yields 72 strong and 24 two-anchor
 candidates; ordering conflicts and unmatched symbols remain, so the candidate
 list is not yet a USA symbol map.
+
+## Existing JP data-symbol inventory
+
+The JP game symbol file contains 553 function symbols and 21 non-function
+entries (16 `s32`, four `char`, and one `asciz`). Of those 21 data entries,
+15 fall inside the JP `main` load image and six fall inside JP `.bss`.
+
+The six JP BSS entries are `cdvd_Descriptor` at `0x004EC948`,
+`ppvUserStopPartF` at `0x0061095C`, `ppvCurPrimpLen` at
+`0x00610968`, `ppvPrimpLen` at `0x00610970`, `ppvEmptyLoop` at
+`0x00610974`, and `ppvVertex` at `0x00610978`. Their USA addresses have
+not been established.
+
+The BSS start moves from `0x0048DB00` (JP) to `0x0048D400` (USA), a
+`-0x700` difference. The GP moves from `0x0048DB00` to `0x0048D3E0`, a
+different `-0x720` difference. The BSS size changes from `0x1E1500` to
+`0x1DFA80` (a reduction of `0x1A80`). These distinct changes rule out
+blindly applying one address delta to all data symbols.
+
+Several JP initialized data symbols describe PS2-specific HDD/PFS paths and
+disc identifiers (for example the disk manager's game-code and image-name
+strings). Those values need USA-specific validation for a USA PS2 build and
+will need a different storage design for an iOS runtime.
