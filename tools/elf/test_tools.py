@@ -25,6 +25,7 @@ compare_tool = load_tool("compare_overlays.py", "kh1_compare_overlays")
 compare_main_tool = load_tool("compare_main.py", "kh1_compare_main")
 extract_tool = load_tool("extract_overlays.py", "kh1_extract_overlays")
 vu_tool = load_tool("vu_disasm.py", "kh1_vu_disasm")
+map_tool = load_tool("map_main_subsegments.py", "kh1_map_main_subsegments")
 
 
 def make_elf(path: Path, main_payload: bytes) -> None:
@@ -125,6 +126,50 @@ class OverlayToolTests(unittest.TestCase):
             extracted = out / manifest["overlays"][0]["filename"]
             self.assertEqual(extracted.read_bytes(), payload[:16])
             self.assertTrue((out / "manifest.json").is_file())
+
+    def test_jp_yaml_subsegment_parser(self):
+        yaml_text = """segments:
+- name: main
+  type: code
+  subsegments:
+  - [ 0x0, hasm, crt0 ]
+  - [ 0x20, c, gameplay ]
+  - [ 0x80, data ]
+- name: overlay_0
+"""
+        entries = map_tool.parse_main_subsegments(yaml_text)
+        self.assertEqual(len(entries), 3)
+        self.assertEqual(entries[0]["type"], "hasm")
+        self.assertEqual(entries[0]["name"], "crt0")
+        self.assertEqual(entries[0]["jp_size"], 0x20)
+        self.assertEqual(entries[1]["jp_size"], 0x60)
+
+    def test_main_subsegment_mapper_uses_multiple_unique_anchors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            jp = root / "jp.elf"
+            usa = root / "usa.elf"
+            payload = bytes(range(32))
+            make_elf(jp, payload)
+            make_elf(usa, payload)
+            yaml_path = root / "jp.yaml"
+            yaml_path.write_text(
+                "segments:\\n- name: main\\n  subsegments:\\n"
+                "  - [ 0x0, asm, first ]\\n"
+                "  - [ 0x10, data, second ]\\n",
+                encoding="utf-8",
+            )
+            result = map_tool.map_subsegments(
+                jp, usa, yaml_path, block_size=16, step=16,
+                search_window=16, min_anchors=1,
+            )
+            self.assertEqual(result["subsegment_count"], 2)
+            self.assertEqual(result["subsegments"][0]["status"], "candidate")
+            self.assertEqual(result["subsegments"][1]["status"], "candidate")
+            self.assertEqual(
+                result["subsegments"][1]["candidates"][0]["usa_start_candidate"],
+                16,
+            )
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
