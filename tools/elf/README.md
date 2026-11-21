@@ -108,7 +108,7 @@ consecutive candidate symbols. The first full result is recorded in
 
 ```sh
 python tools/elf/audit_gp_refs.py \
-  SLPS_251.05 SLUS_203.70 -o usa-gp-reference-audit.json
+  SLPS_251.05 SLUS_203.70 --jp-yaml config/kh.jp.yaml -o usa-gp-opcode-audit.json
 ```
 
 The GP audit pins the retail ELF hashes, scans `ADDIU` and load/store
