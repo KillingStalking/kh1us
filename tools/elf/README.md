@@ -65,7 +65,10 @@ python tools/elf/map_main_subsegments.py \\
 
 The mapper reads the declared `main` subsegments from the JP Splat YAML and
 looks for unique 16-byte anchors in the first `0x1000` bytes of each JP
-subsegment (clipped to that subsegment's end) in both main images. It reports USA start candidates only when the anchors agree on an
+subsegment (clipped to that subsegment's end) in both main images. The global
+anchor index samples every 4-byte-aligned offset; the per-subsegment scan still
+samples at the configured anchor step (16 bytes by default), so valid anchors
+are not silently skipped when a segment starts at a non-16-byte alignment. It reports USA start candidates only when the anchors agree on an
 address delta. The JSON includes the segment type/name, candidate deltas,
 anchor locations, and a status for each subsegment.
 
@@ -93,10 +96,25 @@ python tools/elf/map_symbols.py \
 
 The symbol mapper reads only entries marked `type:func`, bounds each scan by
 the next greater JP function symbol (and a default maximum of `0x400` bytes),
-then votes using unique 16-byte anchors. It is useful for checking known
+then votes using unique 16-byte anchors indexed at 4-byte alignment. It is useful for checking known
 function clusters and identifying candidate USA addresses. Short functions,
 changed functions, missing symbols, aliases, and repeated code can prevent a
 reliable mapping; all output remains provisional and must be checked against
 MIPS disassembly and control flow. The JSON also reports non-increasing USA-address order anomalies between
 consecutive candidate symbols. The first full result is recorded in
 `USA_SYMBOL_MAP.md`.
+
+## Validate known JP-USA MIPS control-flow clusters
+
+```sh
+python tools/elf/validate_control_flow.py \
+  SLPS_251.05 SLUS_203.70 \
+  -o usa-control-flow-validation.json
+```
+
+This version-pinned check validates 13 manually mapped function extents from
+the PPP, worldfile, and EE library regions. It compares instruction/register
+signatures and verifies direct branch, jump, and call targets against three
+piecewise JP-to-USA address ranges. It rejects ELF inputs whose SHA-1 values
+do not match the audited JP and USA executables. The output is evidence for
+these specific clusters only; it is not a complete USA symbol map.
