@@ -26,8 +26,8 @@ compare_main_tool = load_tool("compare_main.py", "kh1_compare_main")
 extract_tool = load_tool("extract_overlays.py", "kh1_extract_overlays")
 vu_tool = load_tool("vu_disasm.py", "kh1_vu_disasm")
 map_tool = load_tool("map_main_subsegments.py", "kh1_map_main_subsegments")
-map_symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
 symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
+control_flow_tool = load_tool("validate_control_flow.py", "kh1_validate_control_flow")
 
 
 def make_elf(path: Path, main_payload: bytes) -> None:
@@ -293,13 +293,26 @@ data_value = 0x00100020; // type:s32
                 "unaligned_func = 0x100004; // type:func\n",
                 encoding="utf-8",
             )
-            result = map_symbol_tool.map_symbols(
+            result = symbol_tool.map_symbols(
                 jp, usa, symbols, block_size=16, step=16,
                 max_function_size=16, min_anchors=1,
             )
             item = result["symbols"][0]
             self.assertEqual(item["status"], "candidate")
             self.assertEqual(item["candidates"][0]["usa_offset_candidate"], 4)
+
+    def test_mips_control_flow_decoder(self):
+        # BEQ r1,r2,+3 branches from 0x100004 to 0x100010.
+        beq = struct.pack("<I", 0x10220003)
+        jr_ra = struct.pack("<I", 0x03E00008)
+        decoded = control_flow_tool.decode_control_flow(
+            beq + jr_ra, base_address=0x100000
+        )
+        self.assertEqual(len(decoded), 2)
+        self.assertEqual(decoded[0]["kind"], "branch")
+        self.assertEqual(decoded[0]["target"], 0x100010)
+        self.assertEqual(decoded[1]["kind"], "jr")
+        self.assertIsNone(decoded[1]["target"])
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
