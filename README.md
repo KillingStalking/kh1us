@@ -6,8 +6,8 @@ A decompilation of the Playstation 2 releases of Kingdom Hearts.
 
 | Game Version             | ELF           | Sha1                                     |
 |--------------------------|---------------|------------------------------------------|
-| Original Japanese        | `SLPS_251.05` |`9dabbf867a7ec2a030df99ba1ed969f2deef0488`|
-| Final Mix (JP Exclusive) | `SLPS_251.98` |`e70bda789916142aafb53d85cef2e806b35ad8d8`|
+| Original Japanese        | `SLPS_251.05` | `9dabbf867a7ec2a030df99ba1ed969f2deef0488`|
+| Final Mix (JP Exclusive) | `SLPS_251.98` | `e70bda789916142aafb53d85cef2e806b35ad8d8`|
 
 ---
 
@@ -25,7 +25,7 @@ A `mips-linux-gnu` binutils toolchain (`objcopy`, `as`, `ld`) and `ninja` are al
 2. Run `./configure.py` to generate the build files.
    - Optionally, specify the game version you're targeting with the `--version`/`-v` flag. Defaults to the original Japanese version if not specified.
    - You can clear existing configurations with the `--clean`/`-c` flag
-   - eg: `./configure.py -c -v fm` will clear the existing build configuration and generate a new one for the Final Mix version.
+   - eg: `./configure.py -c -v fm` will clear the existing configuration and generate a new one for the Final Mix version.
 
 3. Run `ninja` to build the project. Final output will be stored by version in the `build` directory.
 
@@ -35,7 +35,7 @@ A `mips-linux-gnu` binutils toolchain (`objcopy`, `as`, `ld`) and `ninja` are al
 
 No game assets are published in this repository. This includes any files required to run the game, such as the game's executable, ISO, or any files extracted from it.
 
-This repository targets the game's main executable, an elf file named uniquely by the game's serial number. A copy of the elf file is required to build the project, and must be provided by the user by extracting it from a legal copy of the game.
+This repository targets the game's main executable, an ELF file named uniquely by the game's serial number. A copy of the ELF file is required to build the project, and must be provided by the user by extracting it from a legal copy of the game.
 
  >[!WARNING]
  > Additional asset extraction is currently only supported by the JP version of the game.
@@ -49,15 +49,17 @@ Additional assets that are not used in this project may optionally be extracted 
 The original USA release is not yet a supported decompilation target. The
 repository currently contains linker configurations for the Japanese original
 and Final Mix only. Do not reuse either configuration for the USA executable:
-the main image layout, GP value, BSS size, and overlay metadata must be
-validated against the USA ELF first.
+the main image layout, GP value, BSS size, symbols, and split boundaries must
+be validated against the USA ELF first.
 
-A read-only ELF inspection helper is available:
+Read-only audit tools and current findings:
 
-```sh
-python tools/elf/inspect.py SLUS_203.70 --output usa-elf-report.json
-```
+- `tools/elf/inspect.py` — inspect ELF headers, program headers, sections,
+  GP value, hashes, and DVP overlay table metadata.
+- `tools/elf/compare_overlays.py` — compare overlay payloads extracted from
+  EE-addressed ranges in the main load image.
+- [USA ELF audit report](tools/elf/USA_AUDIT.md) — validated ELF metadata,
+  overlay matches, and limitations.
 
-It reports ELF headers, program headers, section ranges, the GP value from
-`.reginfo`, SHA-1/CRC32, and Sony DVP overlay table entries. It does not
-extract game assets or make the project buildable for USA by itself.
+The USA build is not enabled yet. The audit scripts do not extract game assets
+or make the project buildable for USA by themselves.
