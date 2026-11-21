@@ -353,11 +353,11 @@ data_value = 0x00100020; // type:s32
         with tempfile.TemporaryDirectory() as directory:
             yaml_path = Path(directory) / "kh.jp.yaml"
             yaml_path.write_text(
-                "segments:\\n- name: main\\n  subsegments:\\n"
-                "  - [ 0x0, hasm, crt0 ]\\n"
-                "  - [ 0x10, c, startup ]\\n"
-                "  - [ 0x20, asm ]\\n"
-                "  - [ 0x30, data ]\\n",
+                "segments:\n- name: main\n  subsegments:\n"
+                "  - [ 0x0, hasm, crt0 ]\n"
+                "  - [ 0x10, c, startup ]\n"
+                "  - [ 0x20, asm ]\n"
+                "  - [ 0x30, data ]\n",
                 encoding="utf-8",
             )
             self.assertEqual(
