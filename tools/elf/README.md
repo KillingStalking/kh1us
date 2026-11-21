@@ -114,8 +114,9 @@ python tools/elf/audit_gp_refs.py \
 The GP audit pins the retail ELF hashes, scans `ADDIU` and load/store
 encodings using `$gp`, and pairs patterns only inside long runs of unique,
 byte-identical anchors. Pass `--jp-yaml` to classify each JP offset by Splat
-subsegment. The current 373 paired patterns all fall in `data` subsegments;
-none is confirmed as executable GP-relative code. The tool does not generate
+subsegment. All 842 JP raw candidates fall in `data` or `rodata` subsegments (840 and 2
+respectively); none falls in a `c`, `asm`, or `hasm` subsegment. The 373 paired
+patterns all fall in `data`, so none is confirmed as executable GP-relative code. The tool does not generate
 linker symbols.
 
 See [USA_GP_AUDIT.md](USA_GP_AUDIT.md) for the current results.
