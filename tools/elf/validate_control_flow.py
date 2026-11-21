@@ -13,7 +13,6 @@ import importlib.util
 import json
 import struct
 from pathlib import Path
-from hashlib import sha1
 
 
 EXPECTED_JP_SHA1 = "9dabbf867a7ec2a030df99ba1ed969f2deef0488"
