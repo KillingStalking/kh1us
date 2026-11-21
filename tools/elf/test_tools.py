@@ -26,6 +26,7 @@ compare_main_tool = load_tool("compare_main.py", "kh1_compare_main")
 extract_tool = load_tool("extract_overlays.py", "kh1_extract_overlays")
 vu_tool = load_tool("vu_disasm.py", "kh1_vu_disasm")
 map_tool = load_tool("map_main_subsegments.py", "kh1_map_main_subsegments")
+symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
 
 
 def make_elf(path: Path, main_payload: bytes) -> None:
@@ -193,6 +194,46 @@ class OverlayToolTests(unittest.TestCase):
             )
             self.assertEqual(result["mapped_candidate_count"], 2)
             self.assertEqual(result["mapping_order_anomaly_count"], 1)
+
+    def test_function_symbol_parser(self):
+        symbol_text = """// ignored
+foo = 0x00100000; // type:func
+bar = 0x00100010; // type:func
+data_value = 0x00100020; // type:s32
+"""
+        symbols = symbol_tool.parse_function_symbols(symbol_text)
+        self.assertEqual(
+            symbols,
+            [
+                {"name": "foo", "address": 0x00100000},
+                {"name": "bar", "address": 0x00100010},
+            ],
+        )
+
+    def test_function_symbol_mapper(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            jp = root / "jp.elf"
+            usa = root / "usa.elf"
+            payload = bytes(range(32))
+            make_elf(jp, payload)
+            make_elf(usa, payload)
+            symbols_path = root / "symbols.txt"
+            symbols_path.write_text(
+                "first = 0x00100000; // type:func\\n"
+                "second = 0x00100010; // type:func\\n",
+                encoding="utf-8",
+            )
+            result = symbol_tool.map_symbols(
+                jp, usa, symbols_path, block_size=16, step=16,
+                max_function_size=16, min_anchors=1,
+            )
+            self.assertEqual(result["function_symbol_count"], 2)
+            self.assertEqual(result["status_counts"]["candidate"], 2)
+            self.assertEqual(
+                result["symbols"][1]["candidates"][0]["usa_address_candidate"],
+                "0x00100010",
+            )
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
