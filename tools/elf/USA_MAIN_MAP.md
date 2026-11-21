@@ -78,3 +78,21 @@ The same run, grouped by the segment types already declared in the JP YAML:
 Of the 164 strong candidates, 130 originate from JP `c` or `asm`
 segments and 34 from JP data/rodata segments. This type grouping is inherited
 from the JP split map; it does not independently prove the USA classification.
+
+## Manual spot-checks of candidate code regions
+
+The first mapped assembly region at JP main offset `0x1870` has a strong
+candidate at USA main offset `0x1960` (JP-minus-USA delta `-0xF0`).
+Twenty-six unique 16-byte anchors in the first `0x1000` bytes vote for this
+same delta. A byte comparison of the first `0x200` bytes gives 498/512 equal
+bytes (97.27%). The differing words include address/immediate values, and
+the MIPS disassembly at the two candidate starts shows the same initial
+instruction sequence and control-flow shape, with call targets and constants
+that differ between builds.
+
+A second spot-check, JP `main+0x852E0` to USA `main+0x82B80`, has four
+anchors and 180/184 equal bytes (97.83%) across the JP segment extent
+(`0xB8` bytes). These spot-checks support the mapper's usefulness for
+prioritizing code regions, but they do not validate all 626 boundaries or
+establish symbol identity. Branch destinations, pointer tables, and the
+following split boundaries still require independent review.
