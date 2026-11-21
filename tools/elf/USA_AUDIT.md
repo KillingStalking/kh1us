@@ -143,10 +143,11 @@ Comparing the two main sections at the same relative file offsets yields
 also finds 39,667 unique block correspondences, grouped into 2,139 contiguous
 candidate ranges of at least 64 bytes (393,712 bytes total).
 
-These are candidate byte correspondences only. The largest matched ranges
-include non-code/fill-like data when inspected with a generic MIPS disassembler.
-Do not treat these ranges as function matches without validating the relevant
-addresses against the JP split map and instruction boundaries.
+These are candidate byte correspondences only. The matcher does not distinguish
+code from data, and a matching range may contain instructions, constants, or
+other embedded data. Do not treat these ranges as function matches without
+validating the relevant addresses against the JP split map and instruction
+boundaries.
 
 ## Limits and next work
 
