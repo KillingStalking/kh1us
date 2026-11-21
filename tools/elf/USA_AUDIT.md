@@ -193,3 +193,10 @@ The first full JP-to-USA candidate mapping run is documented separately in
 [`USA_MAIN_MAP.md`](USA_MAIN_MAP.md). It processes all 626 JP main-image
 subsegment starts and reports candidate counts plus ordering anomalies. These
 are still address candidates, not verified USA split boundaries.
+
+The new `tools/elf/map_symbols.py` helper also maps the existing JP
+`type:func` symbol entries to provisional USA address candidates. Its output
+is bounded by the next greater JP function symbol and a configurable maximum
+scan size. A manually checked six-function PPP cluster is documented in
+`USA_MAIN_MAP.md`; later functions in that cluster diverge and are not mapped
+by simple delta propagation.
