@@ -94,9 +94,15 @@ def get_main_image(data: bytes, report: dict[str, Any]):
     return data[start:end], section
 
 
-def unique_block_index(data: bytes, block_size: int, step: int):
+def unique_block_index(data: bytes, block_size: int, index_step: int = 4):
+    """Index anchors on every aligned 32-bit word boundary.
+
+    The candidate scan may begin at any 4-byte-aligned offset. Indexing only
+    at the anchor sampling step (normally 16 bytes) silently misses functions
+    and subsegments whose starts have a different alignment modulo 16.
+    """
     occurrences: dict[bytes, list[int]] = defaultdict(list)
-    for offset in range(0, len(data) - block_size + 1, step):
+    for offset in range(0, len(data) - block_size + 1, index_step):
         block = data[offset:offset + block_size]
         if len(set(block)) >= 4:
             occurrences[block].append(offset)
@@ -127,8 +133,8 @@ def map_subsegments(
     usa_main, usa_section = get_main_image(usa_bytes, usa_report)
     entries = parse_main_subsegments(jp_yaml.read_text(encoding="utf-8"))
 
-    jp_index = unique_block_index(jp_main, block_size, step)
-    usa_index = unique_block_index(usa_main, block_size, step)
+    jp_index = unique_block_index(jp_main, block_size)
+    usa_index = unique_block_index(usa_main, block_size)
     output = []
 
     for entry in entries:
