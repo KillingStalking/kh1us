@@ -228,3 +228,26 @@ Several JP initialized data symbols describe PS2-specific HDD/PFS paths and
 disc identifiers (for example the disk manager's game-code and image-name
 strings). Those values need USA-specific validation for a USA PS2 build and
 will need a different storage design for an iOS runtime.
+
+
+## Main-image function control-flow validation
+
+A separate instruction-level validation pass now checks 13 mapped function
+extents across the PPP, worldfile, and EE library regions. It compared 1,952
+bytes and 488 MIPS instruction words: all 488 operation/register signatures
+matched, all 61 control-flow instructions matched in position and kind, and
+all 49 direct branch/jump/call targets resolved through three piecewise
+address maps. The 12 remaining control-flow instructions are matching indirect
+returns.
+
+See [USA_CONTROL_FLOW.md](USA_CONTROL_FLOW.md) for function-level details and
+the reproducible, SHA-1-pinned
+[`validate_control_flow.py`](validate_control_flow.py) tool. This is
+strong evidence for the listed clusters only; GP-relative data references,
+jump tables, all callers, the remaining main-image functions, and the changed
+VU overlays are still open validation work.
+
+The initial main-subsegment and function-symbol candidate counts are marked
+provisional in their respective reports because the anchor index was corrected
+to include 4-byte-aligned positions. The revised full scans still need to be
+run before any USA split configuration is generated.
