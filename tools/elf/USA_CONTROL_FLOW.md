@@ -73,6 +73,10 @@ use the separate `0x2518` delta. For example, calls to JP `sprintf`,
 delta. This independently confirms that address translation must be
 piecewise and call-target-aware.
 
+No instruction in these 13 checked extents uses register `$gp` as an
+I-format base register. The pass therefore does not validate GP-relative
+global-data references; that remains a separate required analysis.
+
 ## Interpretation and limitations
 
 This is a strong local validation of 13 function extents, not a full USA
