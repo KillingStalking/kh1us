@@ -246,8 +246,8 @@ data_value = 0x00100020; // type:s32
             make_elf(usa, payload[16:] + payload[:16])
             symbols_path = root / "symbols.txt"
             symbols_path.write_text(
-                "first = 0x00100000; // type:func\\n"
-                "second = 0x00100010; // type:func\\n",
+                "first = 0x00100000; // type:func\n"
+                "second = 0x00100010; // type:func\n",
                 encoding="utf-8",
             )
             result = symbol_tool.map_symbols(
