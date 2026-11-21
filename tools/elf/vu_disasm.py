@@ -3,14 +3,15 @@
 
 Each VU instruction pair is 8 bytes: lower 32-bit word, then upper 32-bit
 word, both little-endian. This tool decodes operation names, common register
-fields, branch destinations, and upper-word flags. It intentionally preserves
-raw words because it is not a cycle-accurate semantic decoder.
+fields, branch destinations, and upper-word flags. It preserves raw words
+because it is not a cycle-accurate semantic decoder.
 """
 from __future__ import annotations
 
 import argparse
 import struct
 from pathlib import Path
+from typing import List, Optional
 
 UPPER_NAMES = {
     0x1C: "MULq", 0x1D: "MAXi", 0x1E: "MULi", 0x1F: "MINIi",
@@ -54,11 +55,7 @@ LOWER_SPECIAL_NAMES = {
 BC = "xyzw"
 
 
-def upper_special(word: int) -> int:
-    return (word & 3) | ((word >> 4) & 0x7C)
-
-
-def lower_special(word: int) -> int:
+def special(word: int) -> int:
     return (word & 3) | ((word >> 4) & 0x7C)
 
 
@@ -68,12 +65,12 @@ def upper_name(word: int) -> str:
         return ["ADD", "SUB", "MADD", "MSUB", "MAX", "MINI", "MUL"][op >> 2] + BC[op & 3]
     if op < 0x3C:
         return UPPER_NAMES.get(op, "reserved")
-    special = upper_special(word)
-    if special <= 0x0F:
-        return ["ADDA", "SUBA", "MADDA", "MSUBA"][special >> 2] + BC[special & 3]
-    if 0x18 <= special <= 0x1B:
-        return "MULA" + BC[special & 3]
-    return UPPER_SPECIAL_NAMES.get(special, "reserved")
+    sp = special(word)
+    if sp <= 0x0F:
+        return ["ADDA", "SUBA", "MADDA", "MSUBA"][sp >> 2] + BC[sp & 3]
+    if 0x18 <= sp <= 0x1B:
+        return "MULA" + BC[sp & 3]
+    return UPPER_SPECIAL_NAMES.get(sp, "reserved")
 
 
 def lower_name(word: int) -> str:
@@ -85,7 +82,7 @@ def lower_name(word: int) -> str:
     direct = word & 0x3F
     if direct < 0x3C:
         return LOWER_DIRECT_NAMES.get(direct, "reserved")
-    return LOWER_SPECIAL_NAMES.get(lower_special(word), "reserved")
+    return LOWER_SPECIAL_NAMES.get(special(word), "reserved")
 
 
 def signed_imm11(word: int) -> int:
@@ -94,24 +91,24 @@ def signed_imm11(word: int) -> int:
 
 
 def describe_pair(lower: int, upper: int, pc: int, base: int) -> str:
-    up = upper_name(upper)
-    lo = "LOI" if upper & (1 << 31) else lower_name(lower)
+    upper_op = upper_name(upper)
+    lower_op = "LOI" if upper & (1 << 31) else lower_name(lower)
     dest = (upper >> 21) & 0xF
     lanes = "".join(c for c, bit in zip(BC, (8, 4, 2, 1)) if dest & bit) or "-"
     fs, ft, fd = (upper >> 11) & 31, (upper >> 16) & 31, (upper >> 6) & 31
     vi_t, vi_s, vi_d = (lower >> 16) & 15, (lower >> 11) & 15, (lower >> 6) & 15
     op = (lower >> 25) & 0x7F
-    extra = f"vf: dest={lanes} fs=vf{fs} ft=vf{ft} fd=vf{fd}; vi: it=vi{vi_t} is=vi{vi_s} id=vi{vi_d}"
+    extra = f"dest={lanes} fs=vf{fs} ft=vf{ft} fd=vf{fd}; it=vi{vi_t} is=vi{vi_s} id=vi{vi_d}"
     if upper & (1 << 31):
         extra += f"; imm=0x{lower:08X}"
     elif op in (0x20, 0x21, 0x28, 0x29, 0x2C, 0x2D, 0x2E, 0x2F):
         target = base + ((pc // 8 + 1 + signed_imm11(lower)) * 8)
         extra += f"; branch_target=0x{target:04X}"
     flags = "".join(letter for letter, bit in (("I", 31), ("E", 30), ("M", 29), ("D", 28), ("T", 27)) if upper & (1 << bit))
-    return f"{base + pc:08X}  {up:<10} | {lo:<8}  {flags or '-':<5}  {extra}  raw={lower:08X}/{upper:08X}"
+    return f"{base + pc:08X}  {upper_op:<10} | {lower_op:<8}  {flags or '-':<5}  {extra}  raw={lower:08X}/{upper:08X}"
 
 
-def disassemble(data: bytes, base: int, start: int, end: int | None, to_ebit: bool) -> list[str]:
+def disassemble(data: bytes, base: int = 0, start: int = 0, end: Optional[int] = None, to_ebit: bool = False) -> List[str]:
     if len(data) % 8:
         raise ValueError("VU payload size must be a multiple of 8 bytes")
     stop = min(len(data), end if end is not None else len(data))
@@ -135,7 +132,7 @@ def main() -> None:
     parser.add_argument("--to-ebit", action="store_true", help="stop after the first E-bit pair")
     args = parser.parse_args()
     data = args.payload.read_bytes()
-    print("\\n".join(disassemble(data, args.base, args.start, args.end, args.to_ebit)))
+    print("\n".join(disassemble(data, args.base, args.start, args.end, args.to_ebit)))
 
 
 if __name__ == "__main__":
