@@ -183,9 +183,9 @@ class OverlayToolTests(unittest.TestCase):
             make_elf(usa, payload[16:] + payload[:16])
             yaml_path = root / "jp.yaml"
             yaml_path.write_text(
-                "segments:\\n- name: main\\n  subsegments:\\n"
-                "  - [ 0x0, asm, first ]\\n"
-                "  - [ 0x10, data, second ]\\n",
+                "segments:\n- name: main\n  subsegments:\n"
+                "  - [ 0x0, asm, first ]\n"
+                "  - [ 0x10, data, second ]\n",
                 encoding="utf-8",
             )
             result = map_tool.map_subsegments(
@@ -220,8 +220,8 @@ data_value = 0x00100020; // type:s32
             make_elf(usa, payload)
             symbols_path = root / "symbols.txt"
             symbols_path.write_text(
-                "first = 0x00100000; // type:func\\n"
-                "second = 0x00100010; // type:func\\n",
+                "first = 0x00100000; // type:func\n"
+                "second = 0x00100010; // type:func\n",
                 encoding="utf-8",
             )
             result = symbol_tool.map_symbols(
