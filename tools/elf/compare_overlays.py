@@ -4,10 +4,6 @@
 In these KH1 ELF files, .DVP.overlay.* sections are linker fill markers.
 Their sizes describe the corresponding overlay payloads, whose bytes are
 stored in the main load image at the EE address from .DVP.ovlytab.
-
-The tool validates that each range is inside the main image, then compares
-the extracted payloads. Matching bytes are binary correspondences, not
-automatically verified function boundaries.
 """
 from __future__ import annotations
 
@@ -18,6 +14,9 @@ import importlib.util
 import json
 from pathlib import Path
 from typing import Any
+
+
+BRANCH_OPS = {0x20, 0x21, 0x28, 0x29, 0x2C, 0x2D, 0x2E, 0x2F}
 
 
 def load_inspector():
@@ -44,23 +43,87 @@ def get_payload(data: bytes, report: dict[str, Any], overlay: dict[str, Any]):
     start = main["file_offset"] + address - main["address"]
     end = start + marker["size"]
     main_end = main["file_offset"] + main["size"]
+    marker_end = marker["file_offset"] + marker["size"]
     if address < main["address"] or end > main_end or end > len(data):
-        raise ValueError(
-            f"Overlay {overlay['index']} range {start:#x}:{end:#x} "
-            "is outside the main load image"
-        )
+        raise ValueError(f"Overlay {overlay['index']} range is outside main image")
+    if marker["file_offset"] < 0 or marker_end > len(data):
+        raise ValueError(f"Overlay {overlay['index']} marker section is outside file")
+
     payload = data[start:end]
     if len(payload) % 8:
-        raise ValueError(
-            f"Overlay {overlay['index']} payload size {len(payload)} "
-            "is not a multiple of an 8-byte VU instruction pair"
+        raise ValueError(f"Overlay {overlay['index']} is not 8-byte aligned")
+    marker_data = data[marker["file_offset"]:marker_end]
+    return payload, start, sorted(set(marker_data))
+
+
+def signed_imm11(word: int) -> int:
+    value = word & 0x7FF
+    return value - 0x800 if value & 0x400 else value
+
+
+def pair_statistics(jp_payload: bytes, usa_payload: bytes) -> dict[str, Any]:
+    if len(jp_payload) != len(usa_payload):
+        return {
+            "same_size": False,
+            "aligned_matching_pairs": None,
+            "exact_pairs": None,
+            "branch_displacement_only_changes": None,
+            "other_changed_pairs": None,
+            "pairs_equal_after_branch_mask": None,
+            "branch_changes": [],
+        }
+
+    exact = branch_only = other = normalized_equal = 0
+    branch_changes = []
+    for pair_index in range(len(jp_payload) // 8):
+        offset = pair_index * 8
+        jp_lower = int.from_bytes(jp_payload[offset:offset + 4], "little")
+        jp_upper = int.from_bytes(jp_payload[offset + 4:offset + 8], "little")
+        usa_lower = int.from_bytes(usa_payload[offset:offset + 4], "little")
+        usa_upper = int.from_bytes(usa_payload[offset + 4:offset + 8], "little")
+
+        if jp_lower == usa_lower and jp_upper == usa_upper:
+            exact += 1
+            normalized_equal += 1
+            continue
+
+        jp_op = (jp_lower >> 25) & 0x7F
+        usa_op = (usa_lower >> 25) & 0x7F
+        is_branch_only = (
+            not (jp_upper & (1 << 31))
+            and not (usa_upper & (1 << 31))
+            and jp_op in BRANCH_OPS
+            and jp_op == usa_op
+            and jp_upper == usa_upper
+            and (jp_lower & ~0x7FF) == (usa_lower & ~0x7FF)
         )
-    marker_data = data[marker["file_offset"]:marker["file_offset"] + marker["size"]]
-    fill_values = sorted(set(marker_data))
-    return payload, start, marker, fill_values
+        if is_branch_only:
+            branch_only += 1
+            normalized_equal += 1
+            branch_changes.append({
+                "pair_index": pair_index,
+                "jp_imm11": signed_imm11(jp_lower),
+                "usa_imm11": signed_imm11(usa_lower),
+                "jp_target_pair": pair_index + 1 + signed_imm11(jp_lower),
+                "usa_target_pair": pair_index + 1 + signed_imm11(usa_lower),
+            })
+        else:
+            other += 1
+
+    return {
+        "same_size": True,
+        "pair_count": len(jp_payload) // 8,
+        "exact_pairs": exact,
+        "branch_displacement_only_changes": branch_only,
+        "other_changed_pairs": other,
+        "pairs_equal_after_branch_mask": normalized_equal,
+        "branch_changes": branch_changes,
+    }
 
 
 def compare(jp_path: Path, usa_path: Path, min_block: int = 16) -> dict[str, Any]:
+    if min_block < 1:
+        raise ValueError("min_block must be positive")
     jp_data, usa_data = jp_path.read_bytes(), usa_path.read_bytes()
     jp, usa = inspect_elf(jp_path), inspect_elf(usa_path)
     if jp["dvp_overlay_count"] != usa["dvp_overlay_count"]:
@@ -70,8 +133,8 @@ def compare(jp_path: Path, usa_path: Path, min_block: int = 16) -> dict[str, Any
     for jo, uo in zip(jp["dvp_overlays"], usa["dvp_overlays"]):
         if jo["index"] != uo["index"]:
             raise ValueError("DVP overlay table order differs")
-        jp_payload, jp_off, jp_marker, jp_fill = get_payload(jp_data, jp, jo)
-        usa_payload, usa_off, usa_marker, usa_fill = get_payload(usa_data, usa, uo)
+        jp_payload, jp_off, jp_fill = get_payload(jp_data, jp, jo)
+        usa_payload, usa_off, usa_fill = get_payload(usa_data, usa, uo)
 
         matcher = difflib.SequenceMatcher(None, jp_payload, usa_payload, autojunk=False)
         blocks = [
@@ -100,6 +163,7 @@ def compare(jp_path: Path, usa_path: Path, min_block: int = 16) -> dict[str, Any
             "usa_payload_sha1": hashlib.sha1(usa_payload).hexdigest(),
             "jp_marker_fill": [f"0x{x:02X}" for x in jp_fill],
             "usa_marker_fill": [f"0x{x:02X}" for x in usa_fill],
+            "vu_pair_statistics": pair_statistics(jp_payload, usa_payload),
             "matching_blocks": blocks,
         })
 
@@ -118,8 +182,9 @@ def compare(jp_path: Path, usa_path: Path, min_block: int = 16) -> dict[str, Any
             "The .DVP.overlay.* section size is used as the overlay payload length.",
             "Payload bytes are read from the main load image at the EE address in .DVP.ovlytab.",
             "The .DVP.overlay.* section bytes themselves are linker fill markers, not payload.",
-            "Matching byte ranges are candidates for code correspondence, not verified function boundaries.",
-            "VU instruction pairs are 8 bytes; this tool validates payload alignment but does not disassemble them.",
+            "VU payloads are checked as 8-byte instruction pairs.",
+            "Branch-only changes are detected by masking the lower instruction's signed 11-bit branch displacement.",
+            "Matching byte ranges are candidates for correspondence, not verified function boundaries.",
         ],
     }
 
@@ -131,8 +196,6 @@ def main() -> None:
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--min-block", type=int, default=16)
     args = parser.parse_args()
-    if args.min_block < 1:
-        parser.error("--min-block must be positive")
     result = compare(args.jp_elf, args.usa_elf, args.min_block)
     rendered = json.dumps(result, indent=2)
     if args.output:
