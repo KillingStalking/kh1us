@@ -42,5 +42,16 @@ ranges, EE/VU addresses, and the fill-byte markers. In these ELF files, the
 payload. The EE-addressed range in the main load image is the candidate payload
 location.
 
+## Compare main-image blocks
+
+```sh
+python tools/elf/compare_main.py SLPS_251.05 SLUS_203.70 -o main-map.json
+```
+
+This finds unique fixed-size blocks and groups contiguous matches into
+candidate address ranges. It can help transfer known JP split boundaries to
+candidate USA locations, but it does not distinguish code from data, resolve
+relocations, or identify function boundaries.
+
 Matching bytes are binary correspondences, not automatically verified
 function boundaries or a complete JP-to-USA address map.
