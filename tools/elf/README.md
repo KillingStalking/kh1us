@@ -84,6 +84,11 @@ full-run candidate counts are recorded in `USA_MAIN_MAP.md`.
 python tools/elf/map_symbols.py \
   SLPS_251.05 SLUS_203.70 config/jp/symbol_addrs.txt \
   -o usa-symbol-map.json
+
+# Run separately for the JP SDK/library symbol table:
+python tools/elf/map_symbols.py \
+  SLPS_251.05 SLUS_203.70 config/jp/lib_symbol_addrs.txt \
+  -o usa-library-symbol-map.json
 ```
 
 The symbol mapper reads only entries marked `type:func`, bounds each scan by
