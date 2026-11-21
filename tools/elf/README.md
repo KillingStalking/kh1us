@@ -77,3 +77,19 @@ boundaries map to non-increasing USA addresses. Validate code/data
 classification, MIPS function boundaries, relocations, GP references, and
 branch targets before treating any result as a split boundary. The first
 full-run candidate counts are recorded in `USA_MAIN_MAP.md`.
+
+## Map JP function symbols to USA candidates
+
+```sh
+python tools/elf/map_symbols.py \
+  SLPS_251.05 SLUS_203.70 config/jp/symbol_addrs.txt \
+  -o usa-symbol-map.json
+```
+
+The symbol mapper reads only entries marked `type:func`, bounds each scan by
+the next greater JP function symbol (and a default maximum of `0x400` bytes),
+then votes using unique 16-byte anchors. It is useful for checking known
+function clusters and identifying candidate USA addresses. Short functions,
+changed functions, missing symbols, aliases, and repeated code can prevent a
+reliable mapping; all output remains provisional and must be checked against
+MIPS disassembly and control flow.
