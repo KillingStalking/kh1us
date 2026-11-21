@@ -55,3 +55,22 @@ relocations, or identify function boundaries.
 
 Matching bytes are binary correspondences, not automatically verified
 function boundaries or a complete JP-to-USA address map.
+## Map JP main subsegments to USA candidates
+
+```sh
+python tools/elf/map_main_subsegments.py \\
+  SLPS_251.05 SLUS_203.70 config/kh.jp.yaml \\
+  -o usa-main-subsegment-map.json
+```
+
+The mapper reads the declared `main` subsegments from the JP Splat YAML and
+looks for unique 16-byte anchors near each JP subsegment start in both main
+images. It reports USA start candidates only when the anchors agree on an
+address delta. The JSON includes the segment type/name, candidate deltas,
+anchor locations, and a status for each subsegment.
+
+This is deliberately conservative: a matching interior anchor does not prove
+the JP and USA segment starts are equivalent. One-anchor matches are marked
+weak by default; ties are ambiguous; no candidate is copied into a USA YAML.
+Validate code/data classification, MIPS function boundaries, relocations, GP
+references, and branch targets before treating any result as a split boundary.
