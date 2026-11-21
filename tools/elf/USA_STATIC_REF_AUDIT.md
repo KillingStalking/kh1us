@@ -64,6 +64,23 @@ The 766 main-data/BSS candidates are useful address-map evidence. They do not
 prove every pointer is a standalone global variable: some may be structure
 bases, arrays, tables, or object-relative addresses.
 
+### Byte-content corroboration
+
+The 175 unique main-data target pairs were also checked directly against the
+bytes at each JP and USA target. Every pair has a complete 64-byte window
+available in both main images.
+
+| Window from target | Exact byte-identical pairs | Mean byte equality |
+|---|---:|---:|
+| 16 bytes | 161 / 175 | 98.2% |
+| 32 bytes | 152 / 175 | 97.1% |
+| 64 bytes | 136 / 175 | 95.3% |
+
+This independent content check supports many of the pointer correspondences.
+The 14 pairs whose first 16 bytes differ are retained as candidates because
+some referenced tables/structures may legitimately contain version-specific
+pointers or data. They need object-level review rather than automatic rejection.
+
 ## Main-data address deltas
 
 The JP-minus-USA pointer delta is not constant across the main data region.
