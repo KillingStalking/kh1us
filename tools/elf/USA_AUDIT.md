@@ -248,6 +248,27 @@ strings). Those values need USA-specific validation for a USA PS2 build and
 will need a different storage design for an iOS runtime.
 
 
+## Absolute data-reference mapping
+
+A follow-up scan of the JP Splat code span found 1,202 address-materialization
+sequences (`LUI` plus `ADDIU/ORI`) followed by a memory operation. Of these,
+925 were mapped into USA using two non-overlapping unique 16-byte anchors and
+matching opcode/register signatures. The mapped set contains 465 main-data
+targets, 301 BSS targets, 157 targets outside main/BSS, and 2 code targets.
+All mapped targets remained in the same broad region between builds.
+
+The target-address deltas vary across 4 KiB pages in both main data and BSS.
+For example, main-data pages show dominant deltas from `0x2110` down to
+`0x03E0`, while BSS pages include `0x0700`, `0x0580`, `0xE5F0`,
+`0xB5F0`, `0x1580`, `0x13B0`, and `0x1750`. This rules out a single
+translation offset for either entire region. The full page summaries and
+reproduction command are in [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md);
+the reusable scanner is [audit_static_refs.py](audit_static_refs.py).
+
+These remain static pattern-based candidates, not a complete pointer map or
+proof of global-object identity. They provide anchors for the next data-block
+and global-structure reconstruction pass.
+
 ## Main-image function control-flow validation
 
 A separate instruction-level validation pass now checks 13 mapped function
