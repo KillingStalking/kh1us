@@ -29,6 +29,21 @@ This confirms the raw-image extraction procedure against the known JP target.
 The USA GP and BSS values differ from JP. This is one reason the JP YAML
 cannot safely be reused for USA by changing only the executable name.
 
+## Symbol and relocation metadata
+
+Both retail ELF files contain 42 section headers, but neither contains an
+`SHT_REL` or `SHT_RELA` section, nor a conventional `.symtab` or
+`.dynsym` section. The non-overlay sections are limited to the main image,
+`.bss`, `.reginfo`, the empty `.mdebug.eabi64` marker, and the DVP
+overlay metadata/string tables.
+
+Consequently, there is no retained relocation table or full ELF function
+symbol table to drive an automatic USA relink. JP symbol maps and Splat
+boundaries are external project metadata; each proposed USA mapping must be
+validated from instruction bytes, control-flow targets, and data references.
+The different GP and BSS values make GP-relative data analysis particularly
+important before producing a USA linker configuration.
+
 ## Overlay extraction method
 
 The overlay table provides an EE load address and a VU address. The matching
