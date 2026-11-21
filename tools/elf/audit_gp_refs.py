@@ -111,15 +111,15 @@ def parse_main_subsegments(path: Path, main_size: int):
     in_main = False
     in_subsegments = False
     item_re = re.compile(
-        r"^\\s+-\\s*\\[\\s*(0x[0-9a-fA-F]+|[0-9]+)\\s*,\\s*([^,\\]]+)(?:,\\s*([^\\]]+))?\\]"
+        r"^\s+-\s*\[\s*(0x[0-9a-fA-F]+|[0-9]+)\s*,\s*([^,\]]+)(?:,\s*([^\]]+))?\]"
     )
     for line in lines:
-        if re.match(r"^-\\s+name:\\s*main\\s*$", line.strip()):
+        if re.match(r"^-\s+name:\s*main\s*$", line.strip()):
             in_main, in_subsegments = True, False
             continue
-        if in_main and re.match(r"^\\s+-\\s+name:", line):
+        if in_main and re.match(r"^\s+-\s+name:", line):
             break
-        if in_main and re.match(r"^\\s+subsegments:\\s*$", line):
+        if in_main and re.match(r"^\s+subsegments:\s*$", line):
             in_subsegments = True
             continue
         if in_subsegments:
