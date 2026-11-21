@@ -229,6 +229,16 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
                       (sign16(low) if (usa_words[1] >> 26) == 0x09 else low)) & 0xFFFFFFFF
         jp_kind = classify(item["target"], jp["main"], jp["bss"], code_end)
         usa_kind = classify(usa_target, usa["main"], usa["bss"], code_end)
+        effective_address = (item["target"] + item["mem_imm"]) & 0xFFFFFFFF
+        alignment_by_opcode = {
+            0x21: 2, 0x23: 4, 0x25: 2, 0x27: 4,
+            0x29: 2, 0x2B: 4, 0x30: 4, 0x31: 4,
+            0x32: 16, 0x34: 8, 0x35: 8, 0x38: 4,
+            0x39: 4, 0x3A: 16, 0x3C: 8,
+        }
+        required_alignment = alignment_by_opcode.get(item["mem_op"])
+        alignment_ok = (required_alignment is None or
+                        effective_address % required_alignment == 0)
         mapped.append({
             "jp_code_offset": item["i"], "usa_code_offset": usa_off,
             "code_delta": code_delta, "register": item["reg"],
@@ -236,6 +246,9 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
             "jp_target_kind": jp_kind, "usa_target_kind": usa_kind,
             "target_delta": item["target"] - usa_target,
             "memory_opcode": item["mem_op"], "memory_immediate": item["mem_imm"],
+            "effective_address": effective_address,
+            "required_alignment": required_alignment,
+            "alignment_ok": alignment_ok,
         })
     page_summary = {}
     for kind in ("main_data", "bss"):
@@ -253,6 +266,18 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
                              "deltas": [{"delta": delta, "count": count}
                                         for delta, count in counts.most_common(8)]})
         page_summary[kind] = rows
+    address_maps = {}
+    for kind in ("main_data", "bss"):
+        pairs = sorted({(item["jp_target"], item["usa_target"])
+                        for item in mapped
+                        if item["jp_target_kind"] == kind and item["usa_target_kind"] == kind})
+        anomalies = []
+        for (jp_a, usa_a), (jp_b, usa_b) in zip(pairs, pairs[1:]):
+            if jp_b > jp_a and usa_b <= usa_a:
+                anomalies.append({"jp_before": jp_a, "usa_before": usa_a,
+                                  "jp_after": jp_b, "usa_after": usa_b})
+        address_maps[kind] = {"unique_address_pairs": len(pairs),
+                              "nonmonotonic_adjacent_pairs": anomalies}
     return {
         "jp_sha1": jp["sha1"], "usa_sha1": usa["sha1"],
         "jp_gp": jp["gp"], "usa_gp": usa["gp"],
@@ -263,7 +288,10 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
         "target_kinds": dict(collections.Counter(x["jp_target_kind"] for x in mapped)),
         "target_kind_pairs": dict(collections.Counter(
             x["jp_target_kind"] + "->" + x["usa_target_kind"] for x in mapped)),
-        "page_delta_summary": page_summary, "references": mapped,
+        "page_delta_summary": page_summary,
+        "address_map_checks": address_maps,
+        "alignment_failures": [item for item in mapped if not item["alignment_ok"]],
+        "references": mapped,
         "warning": "Conservative static candidates only; not a complete pointer/relocation map. "
                    "LUI/low-immediate sequences and memory use are pattern-based, and all results "
                    "require semantic review before generating a USA linker map.",
