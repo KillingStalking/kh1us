@@ -154,9 +154,9 @@ class OverlayToolTests(unittest.TestCase):
             make_elf(usa, payload)
             yaml_path = root / "jp.yaml"
             yaml_path.write_text(
-                "segments:\\n- name: main\\n  subsegments:\\n"
-                "  - [ 0x0, asm, first ]\\n"
-                "  - [ 0x10, data, second ]\\n",
+                "segments:\n- name: main\n  subsegments:\n"
+                "  - [ 0x0, asm, first ]\n"
+                "  - [ 0x10, data, second ]\n",
                 encoding="utf-8",
             )
             result = map_tool.map_subsegments(
