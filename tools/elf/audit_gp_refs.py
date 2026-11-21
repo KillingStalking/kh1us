@@ -5,6 +5,7 @@ import argparse
 import collections
 import hashlib
 import json
+import re
 import struct
 from pathlib import Path
 
@@ -103,7 +104,46 @@ def region(address, bss):
     return "bss" if start <= address < end else ("before_bss" if address < start else "after_bss")
 
 
-def audit(jp_path: Path, usa_path: Path):
+def parse_main_subsegments(path: Path, main_size: int):
+    """Read the simple [offset, type, name] entries from the JP Splat main segment."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    entries = []
+    in_main = False
+    in_subsegments = False
+    item_re = re.compile(
+        r"^\\s+-\\s*\\[\\s*(0x[0-9a-fA-F]+|[0-9]+)\\s*,\\s*([^,\\]]+)(?:,\\s*([^\\]]+))?\\]"
+    )
+    for line in lines:
+        if re.match(r"^-\\s+name:\\s*main\\s*$", line.strip()):
+            in_main, in_subsegments = True, False
+            continue
+        if in_main and re.match(r"^\\s+-\\s+name:", line):
+            break
+        if in_main and re.match(r"^\\s+subsegments:\\s*$", line):
+            in_subsegments = True
+            continue
+        if in_subsegments:
+            match = item_re.match(line)
+            if match:
+                entries.append({
+                    "offset": int(match.group(1), 0),
+                    "type": match.group(2).strip(),
+                    "name": (match.group(3) or "").strip(),
+                })
+    entries.sort(key=lambda item: item["offset"])
+    for index, item in enumerate(entries):
+        item["end"] = entries[index + 1]["offset"] if index + 1 < len(entries) else main_size
+    return entries
+
+
+def find_subsegment(offset: int, entries):
+    for item in entries:
+        if item["offset"] <= offset < item["end"]:
+            return item
+    return None
+
+
+def audit(jp_path: Path, usa_path: Path, jp_yaml: Path | None = None):
     jp, usa = parse_elf(jp_path), parse_elf(usa_path)
     if jp["sha1"] != EXPECTED["jp"] or usa["sha1"] != EXPECTED["usa"]:
         raise ValueError("ELF SHA-1 does not match the pinned retail executables")
@@ -129,6 +169,25 @@ def audit(jp_path: Path, usa_path: Path):
             "anchor_run_size": run_size,
         })
     deltas = collections.Counter(x["ea_delta"] for x in details)
+    splat_classification = None
+    if jp_yaml is not None:
+        entries = parse_main_subsegments(jp_yaml, jp["main"]["size"])
+        type_counts = collections.Counter()
+        segment_counts = collections.Counter()
+        for item in details:
+            segment = find_subsegment(item["jp_offset"], entries)
+            if segment is None:
+                type_counts["unmapped"] += 1
+                continue
+            type_counts[segment["type"]] += 1
+            segment_counts[
+                f"0x{segment['offset']:X}-0x{segment['end']:X} {segment['type']} {segment['name']}".strip()
+            ] += 1
+        splat_classification = {
+            "subsegment_count": len(entries),
+            "type_counts": dict(type_counts),
+            "segment_counts": dict(segment_counts),
+        }
     region_pairs = collections.Counter((x["jp_region"], x["usa_region"]) for x in details)
     return {
         "jp_sha1": jp["sha1"], "usa_sha1": usa["sha1"],
@@ -145,6 +204,7 @@ def audit(jp_path: Path, usa_path: Path):
         "long_exact_run_bytes": sum(x[4] for x in runs),
         "paired_gp_references": len(details),
         "effective_address_deltas": dict(deltas),
+        "jp_splat_classification": splat_classification,
         "region_pair_counts": {f"{a}->{b}": n for (a, b), n in region_pairs.items()},
         "references": details,
         "limitations": [
@@ -160,9 +220,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("jp_elf", type=Path)
     parser.add_argument("usa_elf", type=Path)
+    parser.add_argument("--jp-yaml", type=Path, help="JP Splat YAML; classifies paired offsets as code/data")
     parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
-    result = audit(args.jp_elf, args.usa_elf)
+    result = audit(args.jp_elf, args.usa_elf, args.jp_yaml)
     rendered = json.dumps(result, indent=2)
     if args.output:
         args.output.write_text(rendered + "\n", encoding="utf-8")
