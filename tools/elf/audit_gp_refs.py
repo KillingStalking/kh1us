@@ -172,21 +172,31 @@ def audit(jp_path: Path, usa_path: Path, jp_yaml: Path | None = None):
     splat_classification = None
     if jp_yaml is not None:
         entries = parse_main_subsegments(jp_yaml, jp["main"]["size"])
-        type_counts = collections.Counter()
+        paired_type_counts = collections.Counter()
         segment_counts = collections.Counter()
         for item in details:
             segment = find_subsegment(item["jp_offset"], entries)
             if segment is None:
-                type_counts["unmapped"] += 1
+                paired_type_counts["unmapped"] += 1
                 continue
-            type_counts[segment["type"]] += 1
+            paired_type_counts[segment["type"]] += 1
             segment_counts[
                 f"0x{segment['offset']:X}-0x{segment['end']:X} {segment['type']} {segment['name']}".strip()
             ] += 1
+        raw_type_counts = collections.Counter()
+        raw_code_offsets = []
+        for item in decode_gp_refs(jp["payload"], jp["gp"]):
+            segment = find_subsegment(item["offset"], entries)
+            kind = segment["type"] if segment else "unmapped"
+            raw_type_counts[kind] += 1
+            if kind in {"c", "asm", "hasm"}:
+                raw_code_offsets.append(item["offset"])
         splat_classification = {
             "subsegment_count": len(entries),
-            "type_counts": dict(type_counts),
-            "segment_counts": dict(segment_counts),
+            "paired_pattern_type_counts": dict(paired_type_counts),
+            "raw_jp_opcode_candidate_type_counts": dict(raw_type_counts),
+            "raw_jp_code_subsegment_candidate_count": len(raw_code_offsets),
+            "paired_pattern_segment_counts": dict(segment_counts),
         }
     region_pairs = collections.Counter((x["jp_region"], x["usa_region"]) for x in details)
     return {
