@@ -66,6 +66,7 @@ Read-only audit tools and current findings:
   conservative USA address candidates using multiple unique byte anchors.
 - `tools/elf/map_symbols.py` — map known JP function symbols to provisional
   USA addresses using function-bounded byte anchors.
+- [USA GP-relative audit](tools/elf/USA_GP_AUDIT.md) — paired `$gp`-based references and the 32-byte GP/BSS boundary discrepancy.
 - [USA control-flow validation](tools/elf/USA_CONTROL_FLOW.md) — instruction-level checks across mapped PPP, worldfile, and EE library function clusters.
 - [USA ELF audit report](tools/elf/USA_AUDIT.md) — validated metadata,
   overlay matches, and current limitations.
