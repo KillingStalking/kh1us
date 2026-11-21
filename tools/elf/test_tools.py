@@ -268,8 +268,8 @@ data_value = 0x00100020; // type:s32
             make_elf(usa, payload)
             yaml_path = root / "jp.yaml"
             yaml_path.write_text(
-                "segments:\\n- name: main\\n  subsegments:\\n"
-                "  - [ 0x4, asm, unaligned_to_16 ]\\n",
+                "segments:\n- name: main\n  subsegments:\n"
+                "  - [ 0x4, asm, unaligned_to_16 ]\n",
                 encoding="utf-8",
             )
             result = map_tool.map_subsegments(
@@ -290,7 +290,7 @@ data_value = 0x00100020; // type:s32
             make_elf(usa, payload)
             symbols = root / "symbols.txt"
             symbols.write_text(
-                "unaligned_func = 0x100004; // type:func\\n",
+                "unaligned_func = 0x100004; // type:func\n",
                 encoding="utf-8",
             )
             result = map_symbol_tool.map_symbols(
