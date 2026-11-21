@@ -6,6 +6,19 @@ on:
 
 
 jobs:
+  elf_audit_tests:
+    name: ELF audit helper tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run standalone audit tests
+        run: python -m unittest discover -s tools/elf -p 'test_*.py'
+
   build_repo:
     container: ghcr.io/ethteck/kh-build:main
     name: Build repo (${{ matrix.version }})
@@ -61,12 +74,12 @@ jobs:
 
   all_versions_built:
     name: All versions built
-    needs: [build_repo]
+    needs: [build_repo, elf_audit_tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Check build result
         run: |
-          if [ "${{ needs.build_repo.result }}" != "success" ]; then
+          if [ "${{ needs.build_repo.result }}" != "success" ] || [ "${{ needs.elf_audit_tests.result }}" != "success" ]; then
             exit 1
           fi
