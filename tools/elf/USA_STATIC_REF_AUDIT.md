@@ -50,6 +50,16 @@ This is a conservative pattern matcher, not a full MIPS data-flow analysis.
 | Targets classified as code in both builds | 2 |
 | Cross-region target classifications | 0 |
 
+The follow-up quality checks found 175 unique main-data address pairs and
+169 unique BSS address pairs. Two adjacent-pair ordering anomalies remain in
+each region and are retained for manual review rather than silently discarded.
+A memory-access alignment check also flags one BSS candidate: JP code offset
+`0x1FD94` forms base `0x004EFFFF` and then performs a word load at effective
+address `0x004EC947`, which is not 4-byte aligned. Treat that candidate as
+suspicious; it is not evidence for a valid global pointer. The other 300 BSS
+candidates pass the alignment checks implemented for their recognized
+load/store opcodes.
+
 The 766 main-data/BSS candidates are useful address-map evidence. They do not
 prove every pointer is a standalone global variable: some may be structure
 bases, arrays, tables, or object-relative addresses.
@@ -129,6 +139,7 @@ python tools/elf/audit_static_refs.py \
 ```
 
 The JSON contains every mapped sequence, its JP/USA code offsets, reconstructed
-target addresses, target classes, and per-page delta summaries. The ELF
+target addresses, target classes, per-page delta summaries, alignment warnings,
+and unique-address ordering checks. The ELF
 SHA-1 values are pinned so unrelated binaries cannot silently reuse this
 report.
