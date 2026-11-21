@@ -28,6 +28,7 @@ vu_tool = load_tool("vu_disasm.py", "kh1_vu_disasm")
 map_tool = load_tool("map_main_subsegments.py", "kh1_map_main_subsegments")
 symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
 control_flow_tool = load_tool("validate_control_flow.py", "kh1_validate_control_flow")
+static_ref_tool = load_tool("audit_static_refs.py", "kh1_audit_static_refs")
 gp_tool = load_tool("audit_gp_refs.py", "kh1_audit_gp_refs")
 
 
@@ -347,6 +348,41 @@ data_value = 0x00100020; // type:s32
         pairs, runs = gp_tool.exact_anchor_runs(payload, payload[8:] + payload[:8])
         self.assertTrue(pairs)
         self.assertTrue(any(run[0] == 8 and run[2] == 0 for run in runs))
+
+    def test_static_ref_code_range_parser_merges_adjacent_code(self):
+        with tempfile.TemporaryDirectory() as directory:
+            yaml_path = Path(directory) / "kh.jp.yaml"
+            yaml_path.write_text(
+                "segments:\\n- name: main\\n  subsegments:\\n"
+                "  - [ 0x0, hasm, crt0 ]\\n"
+                "  - [ 0x10, c, startup ]\\n"
+                "  - [ 0x20, asm ]\\n"
+                "  - [ 0x30, data ]\\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                static_ref_tool.parse_code_ranges(yaml_path, 0x40),
+                [(0, 0x30)],
+            )
+
+    def test_static_ref_lui_addiu_memory_decoder(self):
+        lui = (0x0F << 26) | (2 << 16) | 0x48DB
+        addiu = (0x09 << 26) | (2 << 21) | (2 << 16) | 0x0100
+        lw = (0x23 << 26) | (2 << 21) | (3 << 16)
+        words = [lui, 0, addiu, lw]
+        result = static_ref_tool.decode_candidate(words, 0)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["target"], 0x48DB0100)
+        self.assertEqual(result["mem_op"], 0x23)
+
+    def test_static_ref_rejects_overwritten_address_register(self):
+        lui = (0x0F << 26) | (2 << 16) | 0x48DB
+        overwrite = (0x09 << 26) | (0 << 21) | (2 << 16) | 0x0004
+        addiu = (0x09 << 26) | (2 << 21) | (2 << 16) | 0x0100
+        lw = (0x23 << 26) | (2 << 21) | (3 << 16)
+        self.assertIsNone(
+            static_ref_tool.decode_candidate([lui, overwrite, addiu, lw], 0)
+        )
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
