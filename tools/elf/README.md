@@ -1,6 +1,6 @@
 # ELF audit tools
 
-These scripts inspect PS2 ELF32/MIPS executables without modifying them.
+These scripts inspect PS2 ELF32/MIPS executables without modifying the inputs.
 
 ## Inspect one executable
 
@@ -8,22 +8,23 @@ These scripts inspect PS2 ELF32/MIPS executables without modifying them.
 python tools/elf/inspect.py SLUS_203.70 -o usa-elf.json
 ```
 
-## Compare Japanese and USA overlay payloads
+## Compare Japanese and USA DVP overlay metadata
 
 ```sh
 python tools/elf/compare_overlays.py SLPS_251.05 SLUS_203.70 -o overlay-compare.json
 ```
 
-The comparison tool reads each overlay's load address from `.DVP.ovlytab`,
-gets its payload length from the corresponding `.DVP.overlay.*` section
-header, and extracts the bytes from the `main` load image. The section's own
-file range is metadata and is not treated as the loaded payload.
+The comparator pairs entries by overlay-table index and reports section names,
+EE/VU address fields, section sizes, SHA-1 hashes, and constant fill-byte
+patterns.
 
-The JSON report includes exact matches, load addresses, payload hashes, and
-long matching byte ranges for non-identical overlays. Exact matches support
-offset-for-offset byte mapping within that overlay. Non-identical matching
-ranges are only candidate correspondences: they are not function boundaries,
-relocation proofs, or evidence that the code can be transplanted unchanged.
+**Important:** In the inspected Kingdom Hearts ELF files, the
+`.DVP.overlay.*` section contents are uniform fill bytes. They are not the
+VU microprogram payloads. The comparator deliberately does not read bytes from
+the main load image at the overlay EE addresses and does not claim to produce
+a JP-to-USA function or code-address map.
 
-These tools do not extract game assets, modify the input ELF, or claim that
-the USA version is fully supported by the decompilation build.
+Matching section fill patterns are not evidence of equivalent executable
+code. Establishing the actual microprogram storage and loader behavior requires
+separate analysis of the DVP linker/loader and the EE-side code that submits
+VU programs.
