@@ -96,3 +96,27 @@ anchors and 180/184 equal bytes (97.83%) across the JP segment extent
 prioritizing code regions, but they do not validate all 626 boundaries or
 establish symbol identity. Branch destinations, pointer tables, and the
 following split boundaries still require independent review.
+
+## JP named-function cluster spot-check
+
+The JP function symbol table provides an additional check around the strong
+candidate at JP `main+0x852E0` → USA `main+0x82B80` (delta
+`0x2760`). Applying that same delta to the next consecutive JP symbols gives
+the following byte comparisons over each function's extent as bounded by the
+next listed JP function symbol:
+
+| JP function | JP offset | Candidate USA offset | Compared bytes equal |
+|---|---:|---:|---:|
+| `pppPoint` | `0x852E0` | `0x82B80` | 140 / 144 (97.2%) |
+| `pppPointCon` | `0x85370` | `0x82C10` | 40 / 40 (100%) |
+| `pppMove` | `0x85398` | `0x82C38` | 204 / 208 (98.1%) |
+| `pppMoveCon` | `0x85468` | `0x82D08` | 40 / 40 (100%) |
+| `pppAcceleCalc` | `0x85490` | `0x82D30` | 204 / 208 (98.1%) |
+| `pppAcceleCon` | `0x85560` | `0x82E00` | 40 / 40 (100%) |
+
+The next listed functions do not maintain this high byte similarity under the
+same delta: `pppAngleCalc` is 22/144 bytes equal, `pppAngleCon` is 5/32,
+`pppAngMoveCalc` is 36/208, and `pppAngMoveCon` is 44/256. Do not propagate
+the `0x2760` mapping beyond the six-function cluster without a fresh match.
+This is a useful example of a locally reliable function cluster inside a
+larger region where the mapping changes or code diverges.
