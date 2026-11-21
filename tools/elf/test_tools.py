@@ -22,6 +22,7 @@ def load_tool(filename: str, module_name: str):
 
 
 compare_tool = load_tool("compare_overlays.py", "kh1_compare_overlays")
+compare_main_tool = load_tool("compare_main.py", "kh1_compare_main")
 extract_tool = load_tool("extract_overlays.py", "kh1_extract_overlays")
 vu_tool = load_tool("vu_disasm.py", "kh1_vu_disasm")
 
@@ -91,6 +92,18 @@ class OverlayToolTests(unittest.TestCase):
             make_elf(usa, bytes(changed))
             different = compare_tool.compare(jp, usa)
             self.assertEqual(different["different_payload_count"], 1)
+
+    def test_main_image_matcher(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            jp = root / "jp.elf"
+            usa = root / "usa.elf"
+            payload = bytes(range(32))
+            make_elf(jp, payload)
+            make_elf(usa, payload)
+            result = compare_main_tool.compare(jp, usa, chunk_size=16, min_run=16)
+            self.assertEqual(result["reported_matching_bytes"], 32)
+            self.assertEqual(result["ranges"][0]["delta"], 0)
 
     def test_extractor_writes_payload_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
