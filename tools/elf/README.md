@@ -92,4 +92,6 @@ then votes using unique 16-byte anchors. It is useful for checking known
 function clusters and identifying candidate USA addresses. Short functions,
 changed functions, missing symbols, aliases, and repeated code can prevent a
 reliable mapping; all output remains provisional and must be checked against
-MIPS disassembly and control flow.
+MIPS disassembly and control flow. The JSON also reports non-increasing USA-address order anomalies between
+consecutive candidate symbols. The first full result is recorded in
+`USA_SYMBOL_MAP.md`.
