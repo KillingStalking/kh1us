@@ -41,8 +41,11 @@ Consequently, there is no retained relocation table or full ELF function
 symbol table to drive an automatic USA relink. JP symbol maps and Splat
 boundaries are external project metadata; each proposed USA mapping must be
 validated from instruction bytes, control-flow targets, and data references.
-The different GP and BSS values make GP-relative data analysis particularly
-important before producing a USA linker configuration.
+The GP and BSS values differ, but the subsequent code-only audit found no
+direct `$gp`-based memory operations in the JP code subsegments; the apparent
+opcode matches are data patterns. The GP delta alone is therefore not a
+validated blocker or a usable global-data relocation rule. Static data
+pointers and other address-construction sequences still require analysis.
 
 ## Overlay extraction method
 
