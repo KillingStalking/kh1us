@@ -93,6 +93,14 @@ class OverlayToolTests(unittest.TestCase):
             different = compare_tool.compare(jp, usa)
             self.assertEqual(different["different_payload_count"], 1)
 
+    def test_branch_displacement_only_change(self):
+        jp_pair = struct.pack("<II", 0x40000001, 0x000002FF)
+        usa_pair = struct.pack("<II", 0x40000002, 0x000002FF)
+        stats = compare_tool.pair_statistics(jp_pair, usa_pair)
+        self.assertEqual(stats["branch_displacement_only_changes"], 1)
+        self.assertEqual(stats["other_changed_pairs"], 0)
+        self.assertEqual(stats["pairs_equal_after_branch_mask"], 1)
+
     def test_main_image_matcher(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
