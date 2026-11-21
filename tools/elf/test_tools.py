@@ -166,10 +166,33 @@ class OverlayToolTests(unittest.TestCase):
             self.assertEqual(result["subsegment_count"], 2)
             self.assertEqual(result["subsegments"][0]["status"], "candidate")
             self.assertEqual(result["subsegments"][1]["status"], "candidate")
+            self.assertEqual(result["mapping_order_anomaly_count"], 0)
             self.assertEqual(
                 result["subsegments"][1]["candidates"][0]["usa_start_candidate"],
                 16,
             )
+
+    def test_mapper_reports_non_monotonic_candidates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            jp = root / "jp.elf"
+            usa = root / "usa.elf"
+            payload = bytes(range(32))
+            make_elf(jp, payload)
+            make_elf(usa, payload[16:] + payload[:16])
+            yaml_path = root / "jp.yaml"
+            yaml_path.write_text(
+                "segments:\\n- name: main\\n  subsegments:\\n"
+                "  - [ 0x0, asm, first ]\\n"
+                "  - [ 0x10, data, second ]\\n",
+                encoding="utf-8",
+            )
+            result = map_tool.map_subsegments(
+                jp, usa, yaml_path, block_size=16, step=16,
+                search_window=16, min_anchors=1,
+            )
+            self.assertEqual(result["mapped_candidate_count"], 2)
+            self.assertEqual(result["mapping_order_anomaly_count"], 1)
 
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
