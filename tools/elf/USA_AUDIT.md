@@ -166,3 +166,24 @@ Next implementation milestone: use the JP split map to classify main-image
 matches as code/data, review the changed VU pairs and branch targets, then
 generate and validate USA-specific split boundaries. Only after that should a
 USA Splat configuration be enabled.
+
+## JP split-map inventory and USA mapping tool
+
+The JP `config/kh.jp.yaml` main segment contains 626 explicitly declared
+subsegment starts across code, assembly, data, and rodata. A new read-only
+helper, `tools/elf/map_main_subsegments.py`, parses those declarations and
+searches the JP/USA main images for unique fixed-size byte anchors near each
+JP subsegment start.
+
+The helper reports candidate USA start addresses only when the matching
+anchors agree on a common address delta. It also preserves the JP segment
+type/name and lists each anchor used for the candidate. Results are classified
+as unmatched, weak single-anchor, ambiguous, or candidate. No candidate is
+automatically written into a USA YAML.
+
+This advances the split-map workflow, but does not yet establish a validated
+USA split map: the tool must be run against the actual JP and USA ELF files,
+then candidate boundaries must be checked against MIPS instruction boundaries,
+relocations, function control flow, and data/rodata references. The mapper's
+unit tests have been added to the existing ELF helper test suite; no passing
+CI result is claimed for this commit.
