@@ -60,3 +60,21 @@ the candidate ranges against MIPS instruction boundaries and the existing JP
 symbol/split information, then inspect GP-relative references, relocation
 sites, and control-flow targets. Only validated regions should be promoted to
 USA split boundaries.
+
+## Candidate counts by JP segment type
+
+The same run, grouped by the segment types already declared in the JP YAML:
+
+| JP segment type | Total | Strong | Two-anchor candidate | Weak | Ambiguous | Out of range | Unmatched |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `c` | 279 | 68 | 18 | 44 | 5 | 1 | 143 |
+| `asm` | 178 | 62 | 13 | 27 | 2 | 0 | 74 |
+| `hasm` | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| `data` | 37 | 10 | 0 | 4 | 0 | 1 | 22 |
+| `.data` | 11 | 0 | 1 | 2 | 0 | 0 | 8 |
+| `.rodata` | 49 | 9 | 0 | 8 | 0 | 0 | 32 |
+| `rodata` | 71 | 15 | 1 | 4 | 0 | 0 | 51 |
+
+Of the 164 strong candidates, 130 originate from JP `c` or `asm`
+segments and 34 from JP data/rodata segments. This type grouping is inherited
+from the JP split map; it does not independently prove the USA classification.
