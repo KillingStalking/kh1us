@@ -200,3 +200,8 @@ is bounded by the next greater JP function symbol and a configurable maximum
 scan size. A manually checked six-function PPP cluster is documented in
 `USA_MAIN_MAP.md`; later functions in that cluster diverge and are not mapped
 by simple delta propagation.
+
+The first full pass over the 532 JP game function symbols is documented in
+[`USA_SYMBOL_MAP.md`](USA_SYMBOL_MAP.md). It yields 72 strong and 24 two-anchor
+candidates; ordering conflicts and unmatched symbols remain, so the candidate
+list is not yet a USA symbol map.
