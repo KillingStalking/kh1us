@@ -13,6 +13,7 @@ import importlib.util
 import json
 import struct
 from pathlib import Path
+from typing import Any
 
 
 EXPECTED_JP_SHA1 = "9dabbf867a7ec2a030df99ba1ed969f2deef0488"
@@ -119,6 +120,57 @@ def translate_target(address: int):
     return None, None
 
 
+
+
+def build_control_flow_graph(functions: list[dict[str, Any]], base_address: int):
+    """Build conservative direct-edge and indirect-transfer inventories."""
+    extents = []
+    for function in functions:
+        start = int(function["usa_offset"], 16) + base_address
+        extents.append((start, start + function["size"], function["name"]))
+
+    direct_edges = []
+    call_edges = []
+    indirect_transfers = []
+    for function in functions:
+        for edge in function["target_checks"]:
+            target = int(edge["usa_target"], 16) if edge["usa_target"] else None
+            target_function = None
+            if target is not None:
+                target_function = next(
+                    (name for start, end, name in extents if start <= target < end),
+                    None,
+                )
+            record = {
+                "source_function": function["name"],
+                "source_usa": edge["usa_source"],
+                "kind": edge["kind"],
+                "target_jp": edge["jp_target"],
+                "target_usa": edge["usa_target"],
+                "mapped_region": edge["map"],
+                "target_function": target_function,
+                "validated_translation": edge["matches"],
+            }
+            direct_edges.append(record)
+            if edge["kind"] == "call":
+                call_edges.append(record)
+        indirect_transfers.extend(function["indirect_transfers"])
+
+    return {
+        "direct_edge_count": len(direct_edges),
+        "direct_edges": direct_edges,
+        "direct_call_count": len(call_edges),
+        "direct_call_edges": call_edges,
+        "indirect_transfer_count": len(indirect_transfers),
+        "indirect_transfers": indirect_transfers,
+        "warning": (
+            "A JAL edge is a direct call instruction, not proof that its target "
+            "is a recovered function. J/JR/JALR may be tail transfers, returns, "
+            "or dispatch; indirect targets are intentionally unresolved."
+        ),
+    }
+
+
 def validate(jp_path: Path, usa_path: Path):
     jp_main, jp_section, jp_report = get_main_image(jp_path)
     usa_main, usa_section, usa_report = get_main_image(usa_path)
@@ -152,12 +204,25 @@ def validate(jp_path: Path, usa_path: Path):
             )
         )
         target_checks = []
-        for jp_item, usa_item in zip(jp_cf, usa_cf):
-            if jp_item["target"] is None:
-                continue
-            expected, map_name = translate_target(jp_item["target"])
-            target_checks.append({
+        indirect_transfers = []
+        if layout_matches:
+            for jp_item, usa_item in zip(jp_cf, usa_cf):
+                if jp_item["target"] is None:
+                    if jp_item["kind"] in ("jr", "jalr"):
+                        indirect_transfers.append({
+                            "source_function": name,
+                            "source_jp": f"0x{jp_section['address'] + jp_offset + jp_item['offset']:08X}",
+                            "source_usa": f"0x{usa_section['address'] + usa_offset + usa_item['offset']:08X}",
+                            "kind": jp_item["kind"],
+                            "target": None,
+                            "resolution": "unresolved_indirect",
+                        })
+                    continue
+                expected, map_name = translate_target(jp_item["target"])
+                target_checks.append({
                 "offset": f"0x{jp_item['offset']:X}",
+                "source_jp": f"0x{jp_section['address'] + jp_offset + jp_item['offset']:08X}",
+                "source_usa": f"0x{usa_section['address'] + usa_offset + usa_item['offset']:08X}",
                 "kind": jp_item["kind"],
                 "jp_target": f"0x{jp_item['target']:08X}",
                 "usa_target": (
@@ -185,6 +250,8 @@ def validate(jp_path: Path, usa_path: Path):
                 item for item in target_checks if not item["matches"]
             ],
             "target_checks": target_checks,
+            "indirect_transfers": indirect_transfers,
+            "target_validation_blocked": not layout_matches,
         })
 
     total_words = sum(item["instruction_words"] for item in functions)
@@ -192,6 +259,7 @@ def validate(jp_path: Path, usa_path: Path):
     total_cf = sum(item["jp_control_flow_count"] for item in functions)
     total_direct = sum(item["direct_target_count"] for item in functions)
     total_target_matches = sum(item["translated_target_matches"] for item in functions)
+    graph = build_control_flow_graph(functions, usa_section["address"])
     return {
         "jp_sha1": jp_report["sha1"],
         "usa_sha1": usa_report["sha1"],
@@ -202,6 +270,7 @@ def validate(jp_path: Path, usa_path: Path):
         "direct_targets": total_direct,
         "translated_direct_targets_matched": total_target_matches,
         "functions": functions,
+        "control_flow_graph": graph,
         "address_maps": TARGET_MAPS,
         "warning": (
             "This validates only the listed function clusters and direct control-flow "
