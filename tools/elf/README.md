@@ -157,3 +157,7 @@ analysis; see [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).
 ## Recover the USA code/data layout
 
 See [USA_CODE_BOUNDARY.md](USA_CODE_BOUNDARY.md) for the current validated function islands, why the existing anchor maps do not establish a USA split, and the evidence required before creating a USA Splat configuration.
+
+## Expand the validated function inventory
+
+See [USA_FUNCTION_EXPANSION.md](USA_FUNCTION_EXPANSION.md) for the prioritized JP function groups and the evidence required to promote USA mappings and call-graph edges.
