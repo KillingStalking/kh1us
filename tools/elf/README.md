@@ -148,7 +148,9 @@ python tools/elf/audit_static_refs.py \
 This scans only JP Splat `c`, `asm`, and `hasm` main subsegments for
 `LUI` + `ADDIU/ORI` address construction followed by a memory operation.
 A candidate is mapped into USA only when two non-overlapping unique 16-byte
-anchors agree and the MIPS opcode/register signatures match. The report
-classifies reconstructed targets as code, main data, BSS, or outside those
-regions. It is a conservative pattern-based pointer audit, not a full
-data-flow or relocation analysis; see [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).
+anchors agree and the MIPS opcode/register signatures match. JP targets are classified using the JP Splat boundary. USA targets are
+classified only by ELF-backed main-image/BSS membership; USA main-image
+targets remain unclassified as code versus data until a USA-specific split is
+validated. The scanner searches the full USA main image for anchors. It is a
+conservative pattern-based pointer audit, not a full data-flow or relocation
+analysis; see [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).

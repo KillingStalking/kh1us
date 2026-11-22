@@ -1,3 +1,5 @@
+> **Methodology correction (2026-11-22):** The original run below used the JP Splat code/data boundary to classify USA targets and limited the USA anchor index to the same JP-relative code span. That assumption is not validated. The scanner has since been corrected to search the entire USA `main` image and to label USA main-image targets as `main_image_unclassified` until a USA-specific code/data split is established. The aggregate USA code/data classifications and counts in the historical run below must therefore be treated as provisional and superseded by a fresh run. BSS membership remains ELF-defined. The corrected run has not yet been produced.
+
 # USA static data-reference audit
 
 This report documents a conservative instruction-pattern pass over the pinned

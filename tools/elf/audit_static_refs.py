@@ -101,11 +101,16 @@ def writes_register(word: int, reg: int) -> bool:
         if funct == 9:
             return rd == reg
         return rd != 0 and rd == reg
+    if op == 0x1E:  # R5900 LQ writes a 128-bit GPR.
+        return rt != 0 and rt == reg
     if op in (1, 2, 4, 5, 6, 7):
         return False
     if op == 3:
         return reg == 31
-    if op in set(range(8, 16)) | set(range(0x20, 0x28)) | set(range(0x30, 0x38)):
+    # Immediate ALU operations and integer loads write rt. Coprocessor
+    # loads (LWC1/LWC2/LDC1/LDC2), PREF, and ordinary stores do not.
+    if op in set(range(8, 16)) | set(range(0x20, 0x28)) | {0x30, 0x34, 0x37, 0x38, 0x3C}:
+        # SC/SCD write the success result back to rt, despite being stores.
         return rt != 0 and rt == reg
     return False
 
@@ -186,11 +191,21 @@ def map_code_offset(candidate, jp_data, usa_data, jp_index, usa_index,
     return mapped, delta
 
 
-def classify(address, main, bss, code_end):
+def classify_jp_target(address, main, bss, code_end):
+    """Classify JP targets using the independently supplied JP Splat boundary."""
     if main["address"] <= address < main["address"] + code_end:
         return "code"
     if main["address"] + code_end <= address < main["address"] + main["size"]:
         return "main_data"
+    if bss["address"] <= address < bss["address"] + bss["size"]:
+        return "bss"
+    return "other"
+
+
+def classify_usa_region(address, main, bss):
+    """Classify only ELF-backed USA regions; its code/data split is not known."""
+    if main["address"] <= address < main["address"] + main["size"]:
+        return "main_image_unclassified"
     if bss["address"] <= address < bss["address"] + bss["size"]:
         return "bss"
     return "other"
@@ -205,7 +220,8 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
     if ranges != [(0, code_end)]:
         raise ValueError("Expected one contiguous Splat code span; inspect ranges manually")
     jp_code = jp["payload"][:code_end]
-    usa_code = usa["payload"][:min(code_end, len(usa["payload"]))]
+    # USA has no validated Splat code/data boundary yet. Search the complete
+    # USA main image for unique anchors rather than imposing the JP code limit.
     jp_words = [struct.unpack_from("<I", jp_code, off)[0]
                 for off in range(0, len(jp_code) - 3, 4)]
     candidates = []
@@ -214,7 +230,7 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
         if item is not None:
             candidates.append(item)
     jp_index = build_anchor_index(jp_code, code_end)
-    usa_index = build_anchor_index(usa_code, len(usa_code))
+    usa_index = build_anchor_index(usa["payload"], len(usa["payload"]))
     mapped = []
     for item in candidates:
         result = map_code_offset(item, jp_code, usa_code, jp_index, usa_index, code_end)
@@ -222,13 +238,14 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
             continue
         usa_off, code_delta = result
         rel_j, rel_k = item["j"] - item["i"], item["k"] - item["i"]
-        usa_words = [struct.unpack_from("<I", usa_code, usa_off + rel)[0]
+        usa_words = [struct.unpack_from("<I", usa["payload"], usa_off + rel)[0]
                      for rel in (0, rel_j, rel_k)]
         low = usa_words[1] & 0xFFFF
         usa_target = (((usa_words[0] & 0xFFFF) << 16) +
                       (sign16(low) if (usa_words[1] >> 26) == 0x09 else low)) & 0xFFFFFFFF
-        jp_kind = classify(item["target"], jp["main"], jp["bss"], code_end)
-        usa_kind = classify(usa_target, usa["main"], usa["bss"], code_end)
+        jp_kind = classify_jp_target(item["target"], jp["main"], jp["bss"], code_end)
+        usa_region = classify_usa_region(usa_target, usa["main"], usa["bss"])
+        # Do not infer USA code/data from the JP code_end.
         effective_address = (item["target"] + item["mem_imm"]) & 0xFFFFFFFF
         alignment_by_opcode = {
             0x21: 2, 0x23: 4, 0x25: 2, 0x27: 4,
@@ -243,7 +260,8 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
             "jp_code_offset": item["i"], "usa_code_offset": usa_off,
             "code_delta": code_delta, "register": item["reg"],
             "jp_target": item["target"], "usa_target": usa_target,
-            "jp_target_kind": jp_kind, "usa_target_kind": usa_kind,
+            "jp_target_kind": jp_kind, "usa_target_kind": usa_region,
+            "usa_target_region": usa_region,
             "target_delta": item["target"] - usa_target,
             "memory_opcode": item["mem_op"], "memory_immediate": item["mem_imm"],
             "effective_address": effective_address,
@@ -254,7 +272,9 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
     for kind in ("main_data", "bss"):
         pages = collections.defaultdict(collections.Counter)
         for item in mapped:
-            if item["jp_target_kind"] == kind and item["usa_target_kind"] == kind:
+            if (item["jp_target_kind"] == kind and
+                    (item["usa_target_region"] == "main_image_unclassified" if kind == "main_data"
+                     else item["usa_target_region"] == "bss")):
                 base = jp["main"]["address"] if kind == "main_data" else jp["bss"]["address"]
                 pages[(item["jp_target"] - base) >> 12][item["target_delta"]] += 1
         rows = []
@@ -270,7 +290,9 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
     for kind in ("main_data", "bss"):
         pairs = sorted({(item["jp_target"], item["usa_target"])
                         for item in mapped
-                        if item["jp_target_kind"] == kind and item["usa_target_kind"] == kind})
+                        if item["jp_target_kind"] == kind and
+                        (item["usa_target_region"] == "main_image_unclassified" if kind == "main_data"
+                         else item["usa_target_region"] == "bss")})
         anomalies = []
         for (jp_a, usa_a), (jp_b, usa_b) in zip(pairs, pairs[1:]):
             if jp_b > jp_a and usa_b <= usa_a:
@@ -286,8 +308,8 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
         "code_ranges": ranges, "jp_lui_address_sequences": len(candidates),
         "mapped_sequences": len(mapped),
         "target_kinds": dict(collections.Counter(x["jp_target_kind"] for x in mapped)),
-        "target_kind_pairs": dict(collections.Counter(
-            x["jp_target_kind"] + "->" + x["usa_target_kind"] for x in mapped)),
+        "target_region_pairs": dict(collections.Counter(
+            x["jp_target_kind"] + "->" + x["usa_target_region"] for x in mapped)),
         "page_delta_summary": page_summary,
         "address_map_checks": address_maps,
         "alignment_failures": [item for item in mapped if not item["alignment_ok"]],

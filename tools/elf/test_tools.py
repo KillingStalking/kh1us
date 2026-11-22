@@ -384,6 +384,36 @@ data_value = 0x00100020; // type:s32
             static_ref_tool.decode_candidate([lui, overwrite, addiu, lw], 0)
         )
 
+    def test_static_ref_detects_r5900_lq_register_write(self):
+        lui = (0x0F << 26) | (2 << 16) | 0x48DB
+        lq = (0x1E << 26) | (2 << 21) | (2 << 16)
+        addiu = (0x09 << 26) | (2 << 21) | (2 << 16) | 0x0100
+        lw = (0x23 << 26) | (2 << 21) | (3 << 16)
+        self.assertIsNone(
+            static_ref_tool.decode_candidate([lui, lq, addiu, lw], 0)
+        )
+
+    def test_static_ref_detects_sc_and_scd_register_writes(self):
+        for opcode in (0x38, 0x3C):
+            ins = (opcode << 26) | (2 << 21) | (2 << 16)
+            self.assertTrue(static_ref_tool.writes_register(ins, 2))
+
+    def test_static_ref_does_not_treat_coprocessor_load_as_gpr_write(self):
+        for opcode in (0x31, 0x32, 0x35, 0x36):
+            ins = (opcode << 26) | (2 << 21) | (2 << 16)
+            self.assertFalse(static_ref_tool.writes_register(ins, 2))
+
+    def test_usa_target_classification_does_not_assume_jp_code_boundary(self):
+        main = {"address": 0x100000, "size": 0x400000}
+        bss = {"address": 0x500000, "size": 0x1000}
+        self.assertEqual(
+            static_ref_tool.classify_usa_region(0x200000, main, bss),
+            "main_image_unclassified",
+        )
+        self.assertEqual(
+            static_ref_tool.classify_usa_region(0x500100, main, bss), "bss"
+        )
+
     def test_vu_pair_decoder_and_alignment_validation(self):
         pair = struct.pack("<II", 0x100E0400, 0x000002FF)
         lines = vu_tool.disassemble(pair)
