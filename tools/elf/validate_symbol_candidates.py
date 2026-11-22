@@ -63,7 +63,8 @@ def target_mapping(target: int, candidates: list[dict[str, Any]], main_vma: int)
 
 
 def validate_candidates(jp_path: Path, usa_path: Path, map_json: Path,
-                        min_anchors: int = 2, min_signature_ratio: float = 0.98):
+                        min_anchors: int = 2, min_signature_ratio: float = 0.98,
+                        name_prefix: str | None = None):
     report = json.loads(map_json.read_text(encoding="utf-8"))
     jp_main, jp_section, jp_report = cf.get_main_image(jp_path)
     usa_main, usa_section, usa_report = cf.get_main_image(usa_path)
@@ -75,6 +76,8 @@ def validate_candidates(jp_path: Path, usa_path: Path, map_json: Path,
         raise ValueError("Mapper JSON hashes do not match the supplied ELF pair")
 
     candidates = mapped_candidates(report, min_anchors)
+    if name_prefix:
+        candidates = [item for item in candidates if item["name"].startswith(name_prefix)]
     # Build a unique-address index; aliases at one JP address share one extent.
     by_start = {}
     for item in candidates:
@@ -199,9 +202,10 @@ def main():
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--min-anchors", type=int, default=2)
     parser.add_argument("--min-signature-ratio", type=float, default=0.98)
+    parser.add_argument("--name-prefix", help="Only validate symbols with this prefix, e.g. cdvd_")
     args = parser.parse_args()
     result = validate_candidates(args.jp_elf, args.usa_elf, args.mapper_json,
-                                 args.min_anchors, args.min_signature_ratio)
+                                 args.min_anchors, args.min_signature_ratio, args.name_prefix)
     rendered = json.dumps(result, indent=2)
     if args.output:
         args.output.write_text(rendered + "\n", encoding="utf-8")

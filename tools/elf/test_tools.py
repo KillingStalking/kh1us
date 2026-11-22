@@ -30,6 +30,7 @@ symbol_tool = load_tool("map_symbols.py", "kh1_map_symbols")
 control_flow_tool = load_tool("validate_control_flow.py", "kh1_validate_control_flow")
 static_ref_tool = load_tool("audit_static_refs.py", "kh1_audit_static_refs")
 gp_tool = load_tool("audit_gp_refs.py", "kh1_audit_gp_refs")
+candidate_tool = load_tool("validate_symbol_candidates.py", "kh1_validate_symbol_candidates")
 
 
 def make_elf(path: Path, main_payload: bytes) -> None:
@@ -335,6 +336,35 @@ data_value = 0x00100020; // type:s32
         self.assertEqual(graph["indirect_transfer_count"], 1)
         self.assertEqual(graph["direct_call_edges"][0]["target_function"], "callee")
         self.assertIsNone(graph["direct_edges"][1]["target_function"])
+
+    def test_symbol_candidate_mapper_requires_anchor_evidence(self):
+        report = {
+            "symbols": [
+                {"name": "cdvd_good", "jp_address": "0x00110000", "jp_offset": 0x1000,
+                 "scan_size": 0x40, "status": "candidate",
+                 "candidates": [{"anchor_count": 2, "usa_offset_candidate": 0x900,
+                                 "delta": 0x100}]},
+                {"name": "cdvd_weak", "jp_address": "0x00110040", "jp_offset": 0x1040,
+                 "scan_size": 0x20, "status": "weak_single_anchor",
+                 "candidates": [{"anchor_count": 1, "usa_offset_candidate": 0x940,
+                                 "delta": 0x100}]},
+            ]
+        }
+        mapped = candidate_tool.mapped_candidates(report, min_anchors=2)
+        self.assertEqual([item["name"] for item in mapped], ["cdvd_good"])
+
+    def test_candidate_target_translation_is_piecewise_by_function(self):
+        candidates = [
+            {"name": "first", "jp_address": 0x00110000,
+             "usa_offset": 0x800, "scan_size": 0x40},
+        ]
+        translated, name = candidate_tool.target_mapping(
+            0x00110024, candidates, 0x00100000
+        )
+        self.assertEqual(translated, 0x00100824)
+        self.assertEqual(name, "first")
+        self.assertEqual(candidate_tool.target_mapping(0x00120000, candidates, 0x00100000),
+                         (None, None))
 
     def test_mips_control_flow_decoder(self):
         # BEQ r1,r2,+3 branches from 0x100004 to 0x100010.
