@@ -124,14 +124,17 @@ word fields, computed values, and exact-anchor run size.
 ## Follow-up: absolute address materialization
 
 The direct `$gp` scan does not mean the executable lacks static global-data
-references. A separate instruction-pattern pass found 1,202 JP code
+references. A historical instruction-pattern pass found 1,202 JP code
 sequences that materialize an address with `LUI` + `ADDIU/ORI` and then use
 the register as a memory base. Of these, 925 were mapped into USA using two
 non-overlapping unique byte anchors and matching instruction/register
-signatures. The mapped set contains 465 main-data targets and 301 BSS targets
-that remain in the corresponding region in USA. Their address deltas vary
-across pages, confirming that neither main data nor BSS can be translated by
-one global offset. See [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).
+signatures. A methodology review found that the first run reused the JP
+code/data boundary to classify USA targets and searched only a JP-sized prefix
+of the USA main image. The corrected scanner now searches the full USA main
+image and leaves USA main-image targets unclassified until a USA-specific split
+is validated. The historical counts of 465 main-data targets and 301 BSS
+targets are provisional, not final USA category totals. See
+[USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).
 
 These are still static candidates; they do not constitute a complete pointer
 map or prove the identity of each global object.
