@@ -251,19 +251,24 @@ will need a different storage design for an iOS runtime.
 ## Absolute data-reference mapping
 
 A follow-up scan of the JP Splat code span found 1,202 address-materialization
-sequences (`LUI` plus `ADDIU/ORI`) followed by a memory operation. Of these,
-925 were mapped into USA using two non-overlapping unique 16-byte anchors and
-matching opcode/register signatures. The mapped set contains 465 main-data
-targets, 301 BSS targets, 157 targets outside main/BSS, and 2 code targets.
-All mapped targets remained in the same broad region between builds.
+sequences (`LUI` plus `ADDIU/ORI`) followed by a memory operation. The
+historical scan mapped 925 into USA using two non-overlapping unique 16-byte
+anchors and matching opcode/register signatures. Its USA code/data
+classification reused the JP Splat code boundary, however, and is now marked
+provisional: the USA boundary has not been validated. The corrected scanner
+searches the complete USA main image and labels USA main-image targets as
+unclassified until a USA-specific split map exists. The historical category
+counts below the old report must not be used as confirmed USA code/data totals.
 
 The target-address deltas vary across 4 KiB pages in both main data and BSS.
-For example, main-data pages show dominant deltas from `0x2110` down to
-`0x03E0`, while BSS pages include `0x0700`, `0x0580`, `0xE5F0`,
-`0xB5F0`, `0x1580`, `0x13B0`, and `0x1750`. This rules out a single
-translation offset for either entire region. The full page summaries and
-reproduction command are in [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md);
-the reusable scanner is [audit_static_refs.py](audit_static_refs.py).
+For example, the historical main-data page summary shows dominant deltas from
+`0x2110` down to `0x03E0`, while BSS pages include `0x0700`, `0x0580`,
+`0xE5F0`, `0xB5F0`, `0x1580`, `0x13B0`, and `0x1750`. These
+patterns suggest piecewise address movement, but the main-data summary must
+be regenerated with the corrected USA classification. The BSS observations
+remain ELF-range based. The full report is
+[USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md), and the reusable scanner is
+[audit_static_refs.py](audit_static_refs.py).
 
 These remain static pattern-based candidates, not a complete pointer map or
 proof of global-object identity. They provide anchors for the next data-block
