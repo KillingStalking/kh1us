@@ -195,3 +195,12 @@ layout, then checks direct targets that land inside another mapped candidate.
 It intentionally leaves external targets unresolved. A passing candidate body
 is not a promoted symbol until caller/callee corroboration and extent-boundary
 inspection are complete. See [USA_FUNCTION_EXPANSION.md](USA_FUNCTION_EXPANSION.md).
+
+Run the audit helper unit tests from the repository root with:
+
+```sh
+python -m unittest tools.elf.test_tools
+```
+
+A successful unit-test run checks helper behavior only; it does not replace the
+pinned retail ELF analysis or establish any new USA address mapping.
