@@ -106,7 +106,7 @@ def decode_control_flow(data: bytes, base_address: int = 0, start: int = 0, size
         if kind:
             result.append({
                 "offset": offset - start,
-                "kind": kind,
+                    "kind": kind,
                 "signature": instruction_signature(word),
                 "target": target,
             })
@@ -136,14 +136,14 @@ def build_control_flow_graph(functions: list[dict[str, Any]], base_address: int)
         for edge in function["target_checks"]:
             target = int(edge["usa_target"], 16) if edge["usa_target"] else None
             target_function = None
-            if target is not None:
+            if target is not None and edge["matches"]:
                 target_function = next(
                     (name for start, end, name in extents if start <= target < end),
                     None,
                 )
             record = {
                 "source_function": function["name"],
-                "source_usa": edge["usa_source"],
+                    "source_usa": edge["usa_source"],
                 "kind": edge["kind"],
                 "target_jp": edge["jp_target"],
                 "target_usa": edge["usa_target"],
@@ -220,18 +220,18 @@ def validate(jp_path: Path, usa_path: Path):
                     continue
                 expected, map_name = translate_target(jp_item["target"])
                 target_checks.append({
-                "offset": f"0x{jp_item['offset']:X}",
-                "source_jp": f"0x{jp_section['address'] + jp_offset + jp_item['offset']:08X}",
+                    "offset": f"0x{jp_item['offset']:X}",
+                    "source_jp": f"0x{jp_section['address'] + jp_offset + jp_item['offset']:08X}",
                 "source_usa": f"0x{usa_section['address'] + usa_offset + usa_item['offset']:08X}",
                 "kind": jp_item["kind"],
-                "jp_target": f"0x{jp_item['target']:08X}",
-                "usa_target": (
+                    "jp_target": f"0x{jp_item['target']:08X}",
+                    "usa_target": (
                     f"0x{usa_item['target']:08X}"
                     if usa_item["target"] is not None else None
                 ),
-                "map": map_name,
-                "expected_usa_target": f"0x{expected:08X}" if expected is not None else None,
-                "matches": expected is not None and expected == usa_item["target"],
+                    "map": map_name,
+                    "expected_usa_target": f"0x{expected:08X}" if expected is not None else None,
+                    "matches": expected is not None and expected == usa_item["target"],
             })
         functions.append({
             "name": name,

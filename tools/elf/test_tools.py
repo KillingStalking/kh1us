@@ -303,6 +303,39 @@ data_value = 0x00100020; // type:s32
             self.assertEqual(item["status"], "candidate")
             self.assertEqual(item["candidates"][0]["usa_offset_candidate"], 4)
 
+    def test_control_flow_graph_separates_calls_and_indirect_transfers(self):
+        functions = [
+            {
+                "name": "caller", "usa_offset": "0x100", "size": 0x20,
+                "target_checks": [
+                    {
+                        "usa_target": "0x00100104", "usa_source": "0x00100108",
+                        "jp_target": "0x00102864", "kind": "call", "map": "PPP",
+                        "matches": True,
+                    },
+                    {
+                        "usa_target": "0x00100180", "usa_source": "0x0010010C",
+                        "jp_target": "0x001028E0", "kind": "jump", "map": "PPP",
+                        "matches": False,
+                    },
+                ],
+                "indirect_transfers": [
+                    {"source_function": "caller", "source_usa": "0x00100110",
+                     "kind": "jr", "resolution": "unresolved_indirect"}
+                ],
+            },
+            {
+                "name": "callee", "usa_offset": "0x104", "size": 0x10,
+                "target_checks": [], "indirect_transfers": [],
+            },
+        ]
+        graph = control_flow_tool.build_control_flow_graph(functions, 0x00100000)
+        self.assertEqual(graph["direct_edge_count"], 2)
+        self.assertEqual(graph["direct_call_count"], 1)
+        self.assertEqual(graph["indirect_transfer_count"], 1)
+        self.assertEqual(graph["direct_call_edges"][0]["target_function"], "callee")
+        self.assertIsNone(graph["direct_edges"][1]["target_function"])
+
     def test_mips_control_flow_decoder(self):
         # BEQ r1,r2,+3 branches from 0x100004 to 0x100010.
         beq = struct.pack("<I", 0x10220003)
