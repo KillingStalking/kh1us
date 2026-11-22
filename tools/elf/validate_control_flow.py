@@ -222,17 +222,17 @@ def validate(jp_path: Path, usa_path: Path):
                 target_checks.append({
                     "offset": f"0x{jp_item['offset']:X}",
                     "source_jp": f"0x{jp_section['address'] + jp_offset + jp_item['offset']:08X}",
-                "source_usa": f"0x{usa_section['address'] + usa_offset + usa_item['offset']:08X}",
-                "kind": jp_item["kind"],
+                    "source_usa": f"0x{usa_section['address'] + usa_offset + usa_item['offset']:08X}",
+                    "kind": jp_item["kind"],
                     "jp_target": f"0x{jp_item['target']:08X}",
                     "usa_target": (
-                    f"0x{usa_item['target']:08X}"
-                    if usa_item["target"] is not None else None
-                ),
+                        f"0x{usa_item['target']:08X}"
+                        if usa_item["target"] is not None else None
+                    ),
                     "map": map_name,
                     "expected_usa_target": f"0x{expected:08X}" if expected is not None else None,
                     "matches": expected is not None and expected == usa_item["target"],
-            })
+                })
         functions.append({
             "name": name,
             "jp_offset": f"0x{jp_offset:X}",
