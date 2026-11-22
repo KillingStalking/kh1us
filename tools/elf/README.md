@@ -154,3 +154,6 @@ targets remain unclassified as code versus data until a USA-specific split is
 validated. The scanner searches the full USA main image for anchors. It is a
 conservative pattern-based pointer audit, not a full data-flow or relocation
 analysis; see [USA_STATIC_REF_AUDIT.md](USA_STATIC_REF_AUDIT.md).
+## Recover the USA code/data layout
+
+See [USA_CODE_BOUNDARY.md](USA_CODE_BOUNDARY.md) for the current validated function islands, why the existing anchor maps do not establish a USA split, and the evidence required before creating a USA Splat configuration.
