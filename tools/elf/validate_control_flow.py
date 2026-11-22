@@ -143,7 +143,7 @@ def build_control_flow_graph(functions: list[dict[str, Any]], base_address: int)
                 )
             record = {
                 "source_function": function["name"],
-                    "source_usa": edge["usa_source"],
+                "source_usa": edge["usa_source"],
                 "kind": edge["kind"],
                 "target_jp": edge["jp_target"],
                 "target_usa": edge["usa_target"],
