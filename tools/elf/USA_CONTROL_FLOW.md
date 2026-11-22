@@ -89,3 +89,14 @@ evidence.
 The next step is to use these validated regions as anchors for a larger
 function/call-graph matcher, then inspect GP-relative references and data
 tables before generating any USA Splat configuration.
+
+## Call-graph extraction status
+
+The validator now emits direct call edges (JAL), other direct control-flow
+edges (conditional branches and J), and unresolved indirect JR/JALR sites as
+separate collections in its JSON output. It associates a target with a known
+function only when the translated USA target falls inside one of the 13
+validated function extents. This is a conservative *partial* graph: it does
+not infer targets for indirect transfers, and it does not classify every JAL
+target as a function. The JSON report must be regenerated from the pinned ELF
+pair before any graph counts are treated as measured results.

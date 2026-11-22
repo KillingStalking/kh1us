@@ -161,3 +161,15 @@ See [USA_CODE_BOUNDARY.md](USA_CODE_BOUNDARY.md) for the current validated funct
 ## Expand the validated function inventory
 
 See [USA_FUNCTION_EXPANSION.md](USA_FUNCTION_EXPANSION.md) for the prioritized JP function groups and the evidence required to promote USA mappings and call-graph edges.
+
+The control-flow validator also emits a conservative `control_flow_graph`:
+- `direct_call_edges` contains direct JAL call instructions;
+- `direct_edges` preserves branches and jumps separately from calls;
+- `indirect_transfers` records JR/JALR sites without inventing targets;
+- `target_function` is populated only when a translated target lands inside
+  another validated function extent. A mapped address alone is not a symbol.
+
+If a function's control-flow layout differs between builds, target validation
+is blocked for that function rather than pairing unrelated instructions by
+list position. The new graph fields are generated on the next validator run;
+the checked-in historical report has not been regenerated.
