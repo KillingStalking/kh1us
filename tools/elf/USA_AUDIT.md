@@ -257,7 +257,9 @@ anchors and matching opcode/register signatures. Its USA code/data
 classification reused the JP Splat code boundary, however, and is now marked
 provisional: the USA boundary has not been validated. The corrected scanner
 searches the complete USA main image and labels USA main-image targets as
-unclassified until a USA-specific split map exists. The historical category
+unclassified until a USA-specific split map exists. The initial correction
+also left one stale local variable in the mapping call; that was found during
+source review and fixed before any corrected result was published. The historical category
 counts below the old report must not be used as confirmed USA code/data totals.
 
 The target-address deltas vary across 4 KiB pages in both main data and BSS.

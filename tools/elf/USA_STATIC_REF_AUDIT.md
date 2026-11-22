@@ -35,8 +35,9 @@ of `main` is not scanned as instructions.
    code-address delta.
 5. Confirm the opcode/register signatures of the LUI, low-immediate
    instruction, and memory operation at the mapped USA location.
-6. Reconstruct both absolute target addresses and classify them against each
-   executable's code, main-data, and BSS ranges.
+6. Reconstruct both absolute target addresses. Classify JP targets using the
+   JP Splat boundary; classify USA targets only as main-image, BSS, or outside
+   until a USA-specific code/data split has been validated.
 
 This is a conservative pattern matcher, not a full MIPS data-flow analysis.
 
@@ -46,11 +47,11 @@ This is a conservative pattern matcher, not a full MIPS data-flow analysis.
 |---|---:|
 | JP address-materialization sequences with a following memory use | 1,202 |
 | Sequences mapped into USA with two independent anchors | 925 |
-| Targets in JP main data, also main data in USA | 465 |
-| Targets in JP BSS, also BSS in USA | 301 |
-| Targets outside main/BSS in both builds | 157 |
-| Targets classified as code in both builds | 2 |
-| Cross-region target classifications | 0 |
+| Targets in JP main data, also inside USA main image | 465 (historical; provisional) |
+| Targets in JP BSS, also BSS in USA | 301 (historical; provisional) |
+| Targets outside main/BSS in both builds | 157 (historical; provisional) |
+| Targets classified as code in both builds | 2 (historical; provisional) |
+| Cross-region target classifications | 0 (historical; provisional) |
 
 The follow-up quality checks found 175 unique main-data address pairs and
 169 unique BSS address pairs. Two adjacent-pair ordering anomalies remain in
@@ -79,7 +80,9 @@ is not 4-byte aligned. The remaining 300 BSS candidates pass the implemented
 alignment checks. The checker does not claim to validate all PS2-specific
 memory semantics.
 
-The 766 main-data/BSS candidates are useful address-map evidence. They do not
+The historical 766 main-data/BSS candidates are useful leads, but their
+USA-side region breakdown has not yet been regenerated with the corrected
+scanner. They do not
 prove every pointer is a standalone global variable: some may be structure
 bases, arrays, tables, or object-relative addresses.
 
