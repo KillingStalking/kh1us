@@ -60,6 +60,23 @@ suspicious; it is not evidence for a valid global pointer. The other 300 BSS
 candidates pass the alignment checks implemented for their recognized
 load/store opcodes.
 
+The alignment checker reports three failures in the complete mapped set,
+not just the one BSS case:
+
+| JP code offset | JP reconstructed base | Memory op + immediate | Effective address | Classification |
+|---|---:|---|---:|---|
+| `0x1FD94` | `0x004EFFFF` | `LW -0x36B8` | `0x004EC947` | BSS |
+| `0x647DC` | `0xFDFFFFFF` | `LW 0` | `0xFDFFFFFF` | outside main/BSS |
+| `0x7479C` | `0x40000075` | `LW +0x0164` | `0x400001D9` | outside main/BSS |
+
+The latter two are not evidence for main-data or BSS objects; they are
+unclassified address patterns and may represent MMIO, encoded constants, or
+false positives from the deliberately lightweight instruction matcher. The
+first BSS candidate is also suspicious because its reconstructed word address
+is not 4-byte aligned. The remaining 300 BSS candidates pass the implemented
+alignment checks. The checker does not claim to validate all PS2-specific
+memory semantics.
+
 The 766 main-data/BSS candidates are useful address-map evidence. They do not
 prove every pointer is a standalone global variable: some may be structure
 bases, arrays, tables, or object-relative addresses.
