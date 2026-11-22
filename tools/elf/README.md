@@ -173,3 +173,25 @@ If a function's control-flow layout differs between builds, target validation
 is blocked for that function rather than pairing unrelated instructions by
 list position. The new graph fields are generated on the next validator run;
 the checked-in historical report has not been regenerated.
+
+## Validate mapped function candidates
+
+First generate the candidate inventory with a larger extent cap so long
+functions such as `cdvd_TryLoadFile` are not truncated by the default 0x400:
+
+```sh
+python tools/elf/map_symbols.py \
+  SLPS_251.05 SLUS_203.70 config/jp/symbol_addrs.txt \
+  --max-function-size 0x800 --min-anchors 2 \
+  -o usa-symbol-candidates.json
+python tools/elf/validate_symbol_candidates.py \
+  SLPS_251.05 SLUS_203.70 usa-symbol-candidates.json \
+  --name-prefix cdvd_ --min-anchors 2 --min-signature-ratio 0.98 \
+  -o usa-cdvd-function-validation.json
+```
+
+The second pass compares instruction/register signatures and control-flow
+layout, then checks direct targets that land inside another mapped candidate.
+It intentionally leaves external targets unresolved. A passing candidate body
+is not a promoted symbol until caller/callee corroboration and extent-boundary
+inspection are complete. See [USA_FUNCTION_EXPANSION.md](USA_FUNCTION_EXPANSION.md).

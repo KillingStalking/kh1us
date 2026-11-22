@@ -100,3 +100,33 @@ The next numerical deliverable should be a regenerated candidate inventory
 from the corrected mapper, followed by a function-level validation report for
 the first CDVD subcluster. Do not publish candidate counts as validated
 mappings, and do not generate `config/kh.usa.yaml` from this queue alone.
+
+## CDVD candidate-generation and validation commands
+
+The function mapper's default 0x400-byte cap is too small for the
+`cdvd_TryLoadFile` JP symbol interval (0x450 bytes to the next named function).
+Use 0x800 as the cap; the mapper still stops at the next distinct function
+symbol where that bound is available:
+
+```sh
+python tools/elf/map_symbols.py \
+  SLPS_251.05 SLUS_203.70 config/jp/symbol_addrs.txt \
+  --max-function-size 0x800 --min-anchors 2 \
+  -o usa-symbol-candidates.json
+python tools/elf/validate_symbol_candidates.py \
+  SLPS_251.05 SLUS_203.70 usa-symbol-candidates.json \
+  --name-prefix cdvd_ --min-anchors 2 --min-signature-ratio 0.98 \
+  -o usa-cdvd-function-validation.json
+```
+
+The validator requires the pinned ELF hashes and matching mapper-report hashes.
+It compares operation/register signatures and control-flow layout, and checks
+translated direct targets when they fall inside another mapped candidate. It
+records unresolved external targets instead of assuming a global address
+ delta. Its `validated_candidate_body` label is deliberately weaker than a
+promoted function mapping: independent caller/callee evidence, full target
+resolution, delay-slot review, and boundary checks remain mandatory.
+
+**Execution status:** these commands and the validator have been committed,
+but the ELF analysis has not yet been rerun in this environment. No USA CDVD
+address, function count, or call edge is claimed as measured by this revision.
