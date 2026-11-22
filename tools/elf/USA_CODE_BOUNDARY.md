@@ -14,7 +14,7 @@ islands*, not a continuous code interval:
 | Cluster | USA main offset range | Evidence |
 |---|---:|---|
 | PPP point/movement functions | `0x82B80–0x85628` | Six consecutive function extents; 160/160 instruction operation/register signatures; all 14 direct targets checked in the cluster resolve under the PPP delta where applicable |
-| worldfile functions | `0x11E80–0x120A8` | Four consecutive function extents; 138/138 instruction signatures; 23/23 control-flow instruction positions/types; 22/22 direct targets resolve |
+| worldfile functions | `0x11E80–0x120A8` | Four consecutive function extents; 138/138 instruction signatures; 25/25 control-flow instruction positions/types; 22/22 direct targets resolve |
 | EE library functions | `0x14B388–0x14B79C` | Three consecutive function extents; 180/180 instruction signatures; 21/21 control-flow instruction positions/types; 18/18 direct targets resolve |
 
 The aggregate pinned validation covers 13 functions, 488 instruction words,
