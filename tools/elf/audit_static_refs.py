@@ -233,7 +233,7 @@ def run(jp_path: Path, usa_path: Path, jp_yaml: Path):
     usa_index = build_anchor_index(usa["payload"], len(usa["payload"]))
     mapped = []
     for item in candidates:
-        result = map_code_offset(item, jp_code, usa["payload"], jp_index, usa_index, code_end)
+        result = map_code_offset(item, jp_code, usa_code, jp_index, usa_index, code_end)
         if result is None:
             continue
         usa_off, code_delta = result
