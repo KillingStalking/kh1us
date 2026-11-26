@@ -15,7 +15,7 @@ from typing import Any
 
 
 def load_inspector():
-    path = Path(__file__).with_name("inspect.py")
+    path = Path(__file__).with_name("elf_inspect.py")
     spec = importlib.util.spec_from_file_location("kh1_elf_inspect", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Cannot load ELF inspector: {path}")

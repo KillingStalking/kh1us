@@ -5,7 +5,7 @@ These scripts inspect PS2 ELF32/MIPS executables without modifying the inputs.
 ## Inspect one executable
 
 ```sh
-python tools/elf/inspect.py SLUS_203.70 -o usa-elf.json
+python tools/elf/elf_inspect.py SLUS_203.70 -o usa-elf.json
 ```
 
 ## Extract overlay payloads
