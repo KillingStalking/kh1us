@@ -353,6 +353,36 @@ data_value = 0x00100020; // type:s32
         mapped = candidate_tool.mapped_candidates(report, min_anchors=2)
         self.assertEqual([item["name"] for item in mapped], ["cdvd_good"])
 
+    def test_symbol_candidate_mapper_selects_requested_alternate_rank(self):
+        report = {
+            "symbols": [
+                {"name": "cdvd_multi", "jp_address": "0x00110000",
+                 "jp_offset": 0x1000, "scan_size": 0x40, "status": "candidate",
+                 "candidates": [
+                     {"anchor_count": 5, "usa_offset_candidate": 0x900, "delta": 0x100},
+                     {"anchor_count": 3, "usa_offset_candidate": 0x910, "delta": 0xF0},
+                 ]},
+                {"name": "cdvd_single", "jp_address": "0x00110040",
+                 "jp_offset": 0x1040, "scan_size": 0x20, "status": "candidate",
+                 "candidates": [
+                     {"anchor_count": 4, "usa_offset_candidate": 0x940, "delta": 0x100},
+                 ]},
+            ]
+        }
+        primary = candidate_tool.mapped_candidates(report, min_anchors=2)
+        alternate = candidate_tool.mapped_candidates(
+            report, min_anchors=2, candidate_rank=1
+        )
+        self.assertEqual(primary[0]["usa_offset"], 0x900)
+        self.assertEqual(alternate[0]["usa_offset"], 0x910)
+        self.assertEqual(alternate[0]["candidate_rank"], 1)
+        self.assertEqual(alternate[1]["usa_offset"], 0x940)
+        self.assertEqual(alternate[1]["candidate_rank"], 0)
+
+    def test_candidate_rank_rejects_negative_values(self):
+        with self.assertRaises(ValueError):
+            candidate_tool.mapped_candidates({"symbols": []}, candidate_rank=-1)
+
     def test_candidate_target_translation_is_piecewise_by_function(self):
         candidates = [
             {"name": "first", "jp_address": 0x00110000,

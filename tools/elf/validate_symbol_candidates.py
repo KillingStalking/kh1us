@@ -28,17 +28,27 @@ def load_control_flow_tool():
 cf = load_control_flow_tool()
 
 
-def mapped_candidates(map_report: dict[str, Any], min_anchors: int = 2):
+def mapped_candidates(map_report: dict[str, Any], min_anchors: int = 2,
+                      candidate_rank: int = 0):
+    """Select one ranked USA hypothesis per JP symbol.
+
+    If a symbol has no candidate at the requested rank, retain its primary
+    candidate so the surrounding target map remains as complete as possible.
+    """
+    if candidate_rank < 0:
+        raise ValueError("candidate_rank must be non-negative")
     result = []
     for item in map_report.get("symbols", []):
         if item.get("status") not in ("candidate", "candidate_strong"):
             continue
-        if not item.get("candidates"):
+        options = item.get("candidates") or []
+        if not options:
             continue
-        best = item["candidates"][0]
-        if best.get("anchor_count", 0) < min_anchors:
+        selected_rank = min(candidate_rank, len(options) - 1)
+        selected = options[selected_rank]
+        if selected.get("anchor_count", 0) < min_anchors:
             continue
-        usa_offset = best.get("usa_offset_candidate")
+        usa_offset = selected.get("usa_offset_candidate")
         if usa_offset is None:
             continue
         result.append({
@@ -46,8 +56,9 @@ def mapped_candidates(map_report: dict[str, Any], min_anchors: int = 2):
             "jp_address": int(item["jp_address"], 16),
             "jp_offset": item["jp_offset"],
             "usa_offset": usa_offset,
-            "anchor_count": best["anchor_count"],
-            "delta": best["delta"],
+            "anchor_count": selected["anchor_count"],
+            "delta": selected["delta"],
+            "candidate_rank": selected_rank,
             "scan_size": item["scan_size"],
         })
     result.sort(key=lambda x: (x["jp_address"], x["name"]))
@@ -65,7 +76,7 @@ def target_mapping(target: int, candidates: list[dict[str, Any]], main_vma: int)
 
 def validate_candidates(jp_path: Path, usa_path: Path, map_json: Path,
                         min_anchors: int = 2, min_signature_ratio: float = 0.98,
-                        name_prefix: str | None = None):
+                        name_prefix: str | None = None, candidate_rank: int = 0):
     report = json.loads(map_json.read_text(encoding="utf-8"))
     jp_main, jp_section, jp_report = cf.get_main_image(jp_path)
     usa_main, usa_section, usa_report = cf.get_main_image(usa_path)
@@ -76,7 +87,7 @@ def validate_candidates(jp_path: Path, usa_path: Path, map_json: Path,
     if report.get("jp_sha1") != jp_report["sha1"] or report.get("usa_sha1") != usa_report["sha1"]:
         raise ValueError("Mapper JSON hashes do not match the supplied ELF pair")
 
-    candidates = mapped_candidates(report, min_anchors)
+    candidates = mapped_candidates(report, min_anchors, candidate_rank)
     if name_prefix:
         candidates = [item for item in candidates if item["name"].startswith(name_prefix)]
     # Build a unique-address index; aliases at one JP address share one extent.
@@ -99,6 +110,7 @@ def validate_candidates(jp_path: Path, usa_path: Path, map_json: Path,
             "usa_address_candidate": f"0x{usa_section['address'] + usa_offset:08X}",
             "size": size,
             "anchor_count": item["anchor_count"],
+            "candidate_rank": item["candidate_rank"],
             "instruction_signature_matches": 0,
             "instruction_words": 0,
             "signature_ratio": 0.0,
@@ -180,6 +192,7 @@ def validate_candidates(jp_path: Path, usa_path: Path, map_json: Path,
             "max_function_size": report.get("max_function_size"),
             "min_anchors": min_anchors,
             "min_signature_ratio": min_signature_ratio,
+            "candidate_rank": candidate_rank,
         },
         "candidate_count": len(candidates),
         "validated_candidate_body_count": sum(x["status"] == "validated_candidate_body" for x in results),
@@ -204,9 +217,13 @@ def main():
     parser.add_argument("--min-anchors", type=int, default=2)
     parser.add_argument("--min-signature-ratio", type=float, default=0.98)
     parser.add_argument("--name-prefix", help="Only validate symbols with this prefix, e.g. cdvd_")
+    parser.add_argument("--candidate-rank", type=int, default=0,
+                        help="Candidate rank to test (0=primary, 1=first alternate); "
+                             "symbols with fewer candidates reuse their last available rank")
     args = parser.parse_args()
     result = validate_candidates(args.jp_elf, args.usa_elf, args.mapper_json,
-                                 args.min_anchors, args.min_signature_ratio, args.name_prefix)
+                                 args.min_anchors, args.min_signature_ratio,
+                                 args.name_prefix, args.candidate_rank)
     rendered = json.dumps(result, indent=2)
     if args.output:
         args.output.write_text(rendered + "\n", encoding="utf-8")
