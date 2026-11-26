@@ -137,10 +137,16 @@ def build_control_flow_graph(functions: list[dict[str, Any]], base_address: int)
             target = int(edge["usa_target"], 16) if edge["usa_target"] else None
             target_function = None
             if target is not None and edge["matches"]:
-                target_function = next(
-                    (name for start, end, name in extents if start <= target < end),
-                    None,
+                # Prefer an exact function entry point over an enclosing
+                # function extent (e.g. a nested/overlapping candidate).
+                exact = [entry for entry in extents if entry[0] == target]
+                containing = [
+                    entry for entry in extents if entry[0] <= target < entry[1]
+                ]
+                selected = exact or sorted(
+                    containing, key=lambda entry: (entry[1] - entry[0], entry[0])
                 )
+                target_function = selected[0][2] if selected else None
             record = {
                 "source_function": function["name"],
                 "source_usa": edge["usa_source"],

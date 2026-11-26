@@ -38,13 +38,14 @@ def mapped_candidates(map_report: dict[str, Any], min_anchors: int = 2):
         best = item["candidates"][0]
         if best.get("anchor_count", 0) < min_anchors:
             continue
-        if best.get("usa_address_candidate") is None:
+        usa_offset = best.get("usa_offset_candidate")
+        if usa_offset is None:
             continue
         result.append({
             "name": item["name"],
             "jp_address": int(item["jp_address"], 16),
             "jp_offset": item["jp_offset"],
-            "usa_offset": best["usa_offset_candidate"],
+            "usa_offset": usa_offset,
             "anchor_count": best["anchor_count"],
             "delta": best["delta"],
             "scan_size": item["scan_size"],
